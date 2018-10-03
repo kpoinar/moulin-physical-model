@@ -1,0 +1,142 @@
+\documentclass[11pt]{article}
+\usepackage{palatino, amsmath, setspace, graphicx, titling}
+\usepackage[]{fullpage}
+\usepackage[sort]{natbib} % for biblio
+
+\newcommand{\subtitle}[1]{%
+	\posttitle{%
+		\par \end{center}
+		\begin{center}\large#1\end{center}
+		\vskip0.5em}%
+	}
+
+
+\begin{document}
+
+
+\title{ Elastic deformation of a cylindrical hole in ice}
+\subtitle{Based on Aadn\o{}y (1987), ``A complete elastic model for fluid-induced and in-situ generated stresses with the presence of a borehole.''  \textit{Energy Sources} vol. 9 pp. 239--259. }
+\date{\normalsize \today}
+\author{\normalsize Kristin Poinar}
+
+\maketitle
+
+
+\onehalfspacing
+
+
+\bigskip
+Aadn\o{}y is interested in the stresses surrounding a borehole through porous, fluid-filled rock, for reasons of exploration safety.  He derives an analytic solution for the stress field near a cylindrical borehole through a solid (non-porous) medium, then goes on but we can stop there.  From the stress solution, it is straightforward to get the resulting strains using an elastic constitutive relation (Hooke's Law of Elasticity).
+
+The  Aadn\o{}y paper is in the Dropbox folder.  (\underline{link})
+
+\section*{Aadn\o{}y's setup and stress solutions}
+
+\begin{figure}
+\begin{centering}
+\includegraphics[width=0.55\textwidth]{AadnoyFigure1}
+\caption{\textit{Setup, from Aadn\o{}y (1987).  His model is for a borehole in a porous rock medium, through which water can percolate.  That is why it has freckles.  We ignore pores.  We also use the plane strain case.}}
+\end{centering}
+\end{figure}
+
+Aadn\o{}y finds the stress field around the borehole by summing the independent stress contributions from three sources: hydrostatic stress (including water pressure $P_w$), deviatoric stresses ($\sigma_x$ and $\sigma_y$), and shear stress ($\tau_{xy}$).  The solution is in cylindrical coordinates ($r$, $\theta$, $z$).  Borehole radius is $a$.  
+
+\begin{equation}
+	\begin{aligned}
+	\sigma_r &= \frac{\sigma_x+\sigma_y}{2}\left(1-\frac{a^2}{r^2}\right) + \frac{\sigma_x-\sigma_y}{2}\left(1+\frac{3a^4}{r^4}-\frac{4a^2}{r^2}\right) \cos2\theta + \tau_{xy}\left(1+\frac{3a^4}{r^4}-\frac{4a^2}{r^2}\right)\sin2\theta - \frac{a^2}{r^2}P_w \\
+	\sigma_\theta &= \frac{\sigma_x+\sigma_y}{2}\left(1+\frac{a^2}{r^2}\right) - \frac{\sigma_x-\sigma_y}{2}\left(1+\frac{3a^4}{r^4}\right) \cos2\theta - \tau_{xy}\left(1+\frac{3a^4}{r^4}\right)\sin2\theta - \frac{a^2}{r^2}P_w \\
+	\sigma_z &= -2\nu\left(\sigma_x-\sigma_y\right)\frac{a^2}{r^2}\cos2\theta - 4\nu\tau_{xy}\frac{a^2}{r^2}\sin2\theta
+	\end{aligned}
+\label{StressSolutions}
+\end{equation}
+
+\noindent This assumes plane strain in $z$, i.e., the bottom of the ice has $\epsilon_z$=0 (no vertical deformation).  The stresses in $z$ are arranged such that this is possible (see the appearance of elastic parameter $\nu$ (Poisson's ratio) in the equation for $\sigma_z$).
+
+These can be plugged into Hooke's Law to get the corresponding strain at any point in the domain.  Hooke's Law is just a linear combination of the three stresses in Eqn.~\ref{StressSolutions}:
+
+\begin{equation}
+	\begin{aligned}
+	\epsilon_r &= E^{-1}\left(\sigma_r - \nu \left(\sigma_\theta + \sigma_z \right)\right) \\
+	\epsilon_\theta &= E^{-1}\left(\sigma_\theta - \nu \left(\sigma_r + \sigma_z \right)\right) \\
+	\epsilon_z &= E^{-1}\left(\sigma_z - \nu \left(\sigma_r + \sigma_\theta \right)\right)
+	\end{aligned}
+\label{Hooke}
+\end{equation}
+
+\noindent where $E$ is Young's modulus ($\sim$1~GPa) and $\nu$ is Poisson's ratio ($\sim$0.3, unitless).
+
+\section*{Integrated elastic deformation}
+
+We are interested in the total deformation of the borehole wall, or a spatially integrated version of $\epsilon_r$.  Deformation will be greatest at the borehole wall ($r=a$) and will fall off to zero as $r \rightarrow \infty$.  We would like to sum all these strains over the infinite distance of the ice block in order to get the total elastic deformation experienced from the borehole's perspective.  Integrating Eqn.~\ref{Hooke} over $r|_\infty^a$ entails integrating each stress from Eqn.~\ref{StressSolutions} over the same limits, then summing them together with some constants involved.  So, we would like to integrate all the \textit{r-dependent} terms in those stresses over these limits.  We can (and must) ignore any constant terms in Eqn.~\ref{StressSolutions} because these do not contribute to spatially varying deformation.  Also, integrating a constant over infinite limits makes an infinite result.
+
+Eqn.~\ref{StressSolutions} with the constants removed are as follows:
+
+\begin{equation}
+	\begin{aligned}
+	\sigma^*_r &= \frac{\sigma_x+\sigma_y}{2}\left(-\frac{a^2}{r^2}\right) + \frac{\sigma_x-\sigma_y}{2}\left(\frac{3a^4}{r^4}-\frac{4a^2}{r^2}\right) \cos2\theta + \tau_{xy}\left(\frac{3a^4}{r^4}-\frac{4a^2}{r^2}\right)\sin2\theta - \frac{a^2}{r^2}P_w \\
+	\sigma^*_\theta &= \frac{\sigma_x+\sigma_y}{2}\left(\frac{a^2}{r^2}\right) - \frac{\sigma_x-\sigma_y}{2}\left(\frac{3a^4}{r^4}\right) \cos2\theta - \tau_{xy}\left(\frac{3a^4}{r^4}\right)\sin2\theta - \frac{a^2}{r^2}P_w \\
+	\sigma^*_z &= -2\nu\left(\sigma_x-\sigma_y\right)\frac{a^2}{r^2}\cos2\theta - 4\nu\tau_{xy}\frac{a^2}{r^2}\sin2\theta
+	\end{aligned}
+\label{StressStar}
+\end{equation}
+
+\noindent (It is just taking out all the $+1$s in the terms in parentheses.)
+
+Indefinite integrals of Eqn.~\ref{StressStar} are provided by Wolfram Alpha:
+
+\begin{equation}
+	\begin{aligned}
+	\int \sigma^*_r dr &= -\frac{a^2}{2r^3}\left[\left(a^2-4r^2\right)\left(\sigma_x-\sigma_y\right)\cos2\theta + 2\tau_{xy}\left(a^2-4r^2\right)\sin2\theta+r^2\left(2P_w-\sigma_x-\sigma_y\right)\right] \\
+	\int \sigma^*_\theta dr &= -\frac{a^2}{2r^3}\left[a^2\left(\sigma_x-\sigma_y\right)\cos2\theta+2a^2\tau_{xy}\sin2\theta-r^2\left(\sigma_x+\sigma_y+2P_w\right)  \right] \\
+	\int \sigma^*_z dr &= -\frac{2a^2\nu}{r}\left[\left(\sigma_x-\sigma_y\right)\cos2\theta+2\tau_{xy}\sin2\theta\right]
+	\end{aligned}
+\label{IndefInt}
+\end{equation}
+
+\noindent These should all have dimensions of Pa$\cdot$m.
+
+Definite integrals of Eqn.~\ref{IndefInt} go pretty smoothly, with everything in the $r\rightarrow\infty$ expressions going to zero.  Also, we don't care about tangential variations (coordinate $\theta$), so we will replace all $\cos2\theta$ or $\sin2\theta$ with its average absolute value, $\frac{1}{2}$.  We are left with
+
+% Cos, Sin not replaced with 1/2
+%-------------------
+\if 0%\begin{comment}
+\begin{equation}
+	\begin{aligned}
+	\int_\infty^r \sigma^*_r dr &= -\frac{3a}{2}\left(\sigma_x-\sigma_y\right)\cos2\theta + \frac{3a}{2}2\tau_{xy}\sin2\theta+\frac{a}{2}\left(\sigma_x+\sigma_y-2P_w\right) \\
+	\int_\infty^r \sigma^*_\theta dr &= \frac{a}{2}\left(\sigma_x-\sigma_y\right)\cos2\theta+a\tau_{xy}\sin2\theta-\frac{a}{2}2\left(\sigma_x+\sigma_y+2P_w\right) \\
+	\int_\infty^r \sigma^*_z dr &= 2a\nu\left[\left(\sigma_x-\sigma_y\right)\cos2\theta+2\tau_{xy}\sin2\theta\right]
+	\end{aligned}
+\label{DefInt}
+\end{equation}
+\fi%\end{comment}
+%-----------------
+
+% Cos, Sin replaced with 1/2
+\begin{equation}
+	\begin{aligned}
+	\int_\infty^r \sigma^*_r dr &= -\frac{3a}{4}\left(\sigma_x-\sigma_y + 2\tau_{xy}\right)+\frac{a}{2}\left(\sigma_x+\sigma_y-2P_w\right) \\
+	\int_\infty^r \sigma^*_\theta dr &= \frac{a}{4}\left(\sigma_x-\sigma_y\right)+\frac{a}{2}\left(\tau_{xy}-\sigma_x-\sigma_y-2P_w\right) \\
+	\int_\infty^r \sigma^*_z dr &= a\nu\left[\left(\sigma_x-\sigma_y\right)+2\tau_{xy}\right]
+	\end{aligned}
+\label{DefInt}
+\end{equation}
+
+So, finally we can take Eqn.~\ref{DefInt} and sum them all together with the appropriate elastic constants from Hooke's Law (Eqn.~\ref{Hooke}) to get the deformation in the $r$, $\theta$, and $z$ directions.  We actually only care about $r$, so that's all I'll do here.
+
+\begin{equation}
+	\begin{aligned}
+	\int_\infty^a\epsilon_r dr &= E^{-1}\left[ \int_\infty^a \sigma^*_r dr - \nu\left( \int_\infty^a \sigma_\theta dr + \int_\infty^a \sigma_z dr \right)\right] \\
+	&=  \left[ a\frac{3-\nu}{4} - a^2\nu\right]  \left( \sigma_x - \sigma_y \right) + a\left[\frac{1+\nu}{2}\right] \left( \sigma_x + \sigma_y \right) + P_w a\left[\nu-\frac{1}{2}\right]+ a\left[ \frac{3}{4}-\frac{\nu}{2}-2\nu^2\right]\tau_{xy}
+	\end{aligned}
+\label{DefVec}
+\end{equation}
+
+
+With typical ice sheet values ($a\sim$1~meter; $\sigma_{x}$, $\sigma_y$ and $\tau_{xy}\sim$100~kPa; $P_w$ equivalent to $\sim$500~meters of water), the total elastic deformation comes to a few millimeters.  Since it is elastic, this deformation happens essentially instantly.  In the model, it should happen inside a single timestep.  In the next timestep, a new moulin radius $a$ will be provided (based on the sums of the elastic deformation, creep deformation, sidewall melting, other things...?).
+
+I think it is just fine that $a$ will vary with depth (i.e., it is not a cylinder but a janky pipe of many diameters).
+
+
+
+
+\end{document}
