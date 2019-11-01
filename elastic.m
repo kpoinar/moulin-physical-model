@@ -1,26 +1,28 @@
-% Elastic deformation of a cylindrical hole in a material, with water pressure Pw
+% Elastic deformation of a cylindrical hole in a material, with water
+% pressure Pw and ice pressure Pi
 % Based on Aadnoy 1987: Model for Fluid-Induced and In-Situ Generated
 % Stresses in a Borehole (in rock)
+% 
+% Created July 19, 2018 by Kristin Poinar for use in the moulin model 
+% Modified November 1, 2019 to fix the many errors in the equation I
+% derived from Aadnoy.
 %
 %
-% plane strain at the base of the ice sheet (0 vertical strain; necessary
-% vertical stress to make that true)
+% This solution assumes plane strain at the base of the ice sheet (0 vertical strain; Aadnoy assumes
+% the necessary vertical stress to make that true)
 %
-function dr = elastic(sigx,sigy,nu,E,tauxy,Pw,Mr)
+function dr = elastic(z,Mr,hw,H,sigx,sigy,tauxy,C)
 
+    % Water pressure ("outward")
+    Pw = C.rhow * C.g * (hw-z); % Pa
+    % Ice pressure ("inward")
+    Pi = C.rhoi * C.g * (H-z);  % Pa
+    % Total pressure (inward, unless water level is above flotation)
+    P = Pw - Pi;  % Pa
+    %
     % Radial deformation (relax to equilibrium)
-    dr = (sigx-sigy)*((3-nu)/4*Mr-Mr.^2*nu) + (sigx+sigy)*Mr/2*(1+nu) + Pw*(nu-1)*Mr + tauxy*Mr*(3/4 - nu/2 - 2*nu^2);
-    dr = dr / E;
-    %
-    % The deformation acts to close the borehole:
-    %dr = -dr;
-    % Yes, in fact, it does; so dr is negative.
-    % I had had a typo in the above long equation:
-    % correct: ... + Pw*(nu-0.5)*Mr + ...
-    % typo   : ... + Pw*(nu-0/5)*Mr + ...
-    % which made this large term flip sign (correct is +, was showing -)
-    % so I adjusted the sign of dr when it came out dr > 0
-    %
-    Mrnew = max(0,Mr + dr);
-    dr = Mrnew - Mr;
-    %
+    % Without a/E prefactor:
+    dr = (1 + C.nu)*(P - 0.5*(sigx+sigy)) + 0.25 * (sigx-sigy)*(1 - 3*C.nu - 4*C.nu^2) + 0.25 * tauxy * (2 - 3*C.nu - 8*C.nu^2);
+    % Radial deformation (moulin radius a or Mr):
+    dr = dr .* Mr / C.E;  % meters
+    
