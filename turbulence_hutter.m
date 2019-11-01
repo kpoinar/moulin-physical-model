@@ -1,4 +1,4 @@
-function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr)
+function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt)
 %
 %!!! note, currently there is no mechanism to deal with temperature, so
 %include_ice_temperature should be set as false!!!!
