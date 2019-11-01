@@ -22,7 +22,8 @@ C = makeConstants;
 %Vadd = volume of water added due to melting for each grid cell (m3)
 
 % internal variables
-
+manrough = 0.03;
+fr = 0.1;
 
 include_ice_temperature = false; %True means that the melt is partially dependent 
                                 %on the ice and water temperature (e.g. Clarke 2002) 
@@ -58,7 +59,7 @@ S = pi .* Mr .^2;
 
 % calculate the effective pressure 
 Pi   = C.rhoi .* C.g .* flipud(z); % ice pressure
-Pw   = C.rhow .g .* waterpresent;
+Pw   = C.rhow .*C.g .* waterpresent;
 
 Mp   = 2 .* pi .* Mr; % wetted/melting perimeter
 Rh   = Mr ./2; %hydraulic radius 
@@ -68,7 +69,7 @@ Re   = 4 .* C.rhow .* abs(uw) .* Rh  ./ C.mu; %reynolds number
 Pr   = C.mu .* C.cp ./ C.kw;
 Nu   = 0.023 .* Re .^(4/5) .* Pr .^(2/5);
 
-fR   = 8 .* C.g .* (C.manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
+fR   = 8 .* C.g .* (manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
 tau0 = (1/8) .* fR .* C.rhoi .* uw .* abs(uw); % wall stress exerted by turbulent flow 
 
 
