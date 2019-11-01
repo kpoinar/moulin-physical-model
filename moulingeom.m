@@ -13,21 +13,21 @@ C = makeConstants;
 Tdatatype = 'HarrS4C';
 chebx = 0;  % chebx=1 is not working yet
 nt = 1000;    % plot every nt timesteps
-artesian = 0;  % allow moulin to shed water?
+artesian = 1;  % allow moulin to shed water?
 
 
-
-
+Qscale = 1;     % factor to scale FOXX runoff by
+ndaylag = 1/24;      % How many days to lag the Qin, Qout by?
 
 E = 5;       % enhancement factor for creep
-E = 0.1;       % no enhancement
+% E = 1;       % no enhancement
 
 
 
 
 %
 % H: the ice thickness
-H = 1000; % meters
+H = 500; % meters
 R0 = 2;  % radius of moulin initially
 % dt: timestep
 dt = 3600*24 *0.0625; % seconds (1 day here)
@@ -92,19 +92,20 @@ T = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1) = C.To;   % Melting point at the moulin wall
 %
 % Assign elastic deformation parameters
-sigx = -100e3;%100e3;
-sigy = 0;%-100e3;
-tauxy = 500e3;%100e3;
+sigx = -50e3;%100e3;
+sigy = -50e3;%-100e3;
+tauxy = 100e3;%100e3;
 %
 %
 %
 figure(3); clf;
-subplot(1,6,1); hold on; title('Moulin radius'); xlabel('meters')
-subplot(1,6,2); hold on; title('Creep'); xlabel('m / dt')
-subplot(1,6,3); hold on; title('Refreezing'); xlabel('m / dt')
-subplot(1,6,4); hold on; title('Turbulent melt'); xlabel('m /dt')
-subplot(1,6,5); hold on; title('Potential energy melt-out'); xlabel('m /dt')
-subplot(1,6,6); hold on; title('Elastic'); xlabel('m / dt')
+NP = 4; ii=1;
+subplot(1,NP,1); hold on; title('Moulin radius'); xlabel('meters'); ii=ii+1;
+subplot(1,NP,ii); hold on; title('Creep'); xlabel('m / dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Refreezing'); xlabel('m / dt'); ii=ii+1;
+subplot(1,NP,ii); hold on; title('Turbulent melt'); xlabel('m /dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Potential energy melt-out'); xlabel('m /dt'); ii=ii+1;
+subplot(1,NP,ii); hold on; title('Elastic'); xlabel('m / dt')
 %
 % Record minimum and maximum moulin diameter
 time.Mrmm = zeros(2,numel(time.t));
@@ -132,18 +133,20 @@ Qin(isnan(Qin)) = 0;
 
 
 
-%Qin = Qin/100;
+% Scale the runoff up or down (usually down)
+Qin = Qin * Qscale;
 
 
 
 %
 % Readjust Qout to be Qin but smoothed and lagged by some days
-ndaylag = 18/24;
 nlag = round(ndaylag*24*3600/dt);
 Qout = fastsmooth(Qin,nlag/2,3,1);
 % Qout = max(0,Qout);
 Qout = [Qout(end-nlag+1:end) Qout(1:end-nlag)];
 Qout = Qout * 1;
+% In the winter, there is still Qout.  Make it so.
+Qout = max(Qout, 0.001);
 %Qout = zeros(size(time.t));
 %
 %
@@ -199,12 +202,12 @@ for t = time.t
     % wate velocity in the column
     u = conserveWaterMass(Mr,z,u0,z0);
     % Turbulent melting
-    [dM,Vturb] = turbulence(Mrprev,u,L,dt,H,hw,z,C);
-            time.Vturb(cc) = Vturb;
+%     [dM,Vturb] = turbulence(Mrprev,u,L,dt,H,hw,z,C);
+%             time.Vturb(cc) = Vturb;
 
     % Elastic deformation: do this last because it is a function of moulin 
     % radius.  Elastic deformation is small and sensitive to water pressure
-    %dE = elastic(sigx,sigy,C.nu,C.E,tauxy,Pw,Mrprev);
+    dE = elastic(z,Mrprev,hw,H,sigx,sigy,tauxy,C);
 
     %
     % Potential energy-based melting above the water line
@@ -223,14 +226,14 @@ for t = time.t
     %
     % Plot profiles sometimes
     if ~mod(cc,nt)
-        figure(3); 
+        figure(3); ii=1;
             [~,jw] = min(abs(z-hw));
-            subplot(1,6,1); plot(Mr,z,Mr(jw),hw,'*k'); title(sprintf('Moulin radius at t=%1.1f days',t/3600/24))
-            subplot(1,6,2); plot(dC,z,dC(jw),hw,'*k');
-            subplot(1,6,3); plot(dF,z,dF(jw),hw,'*k'); 
-            subplot(1,6,4); plot(dM,z,dM(jw),hw,'*k');
-            subplot(1,6,5); plot(dP,z,dP(jw),hw,'*k');
-            subplot(1,6,6); plot(dE,z,dE(jw),hw,'*k');
+            subplot(1,NP,1); plot(Mr,z,Mr(jw),hw,'*k'); title(sprintf('Moulin radius at t=%1.1f days',t/3600/24)); ii=ii+1;
+            subplot(1,NP,ii); plot(dC,z,dC(jw),hw,'*k'); ii=ii+1;
+%             subplot(1,NP,ii); plot(dF,z,dF(jw),hw,'*k'); ii=ii+1;
+            subplot(1,NP,ii); plot(dM,z,dM(jw),hw,'*k'); ii=ii+1;
+%             subplot(1,NP,ii); plot(dP,z,dP(jw),hw,'*k'); ii=ii+1;
+            subplot(1,NP,ii); plot(dE,z,dE(jw),hw,'*k');
     end
     %
 end
@@ -249,7 +252,7 @@ ylabel('(m)')
 
 h3 = subplot(4,5,11:14);
 plot(time.t/sec,Qin*dt,time.t/sec,Qout*dt);%,time.t/sec,time.V)
-title(sprintf('Volume entering and leaving per dt (Q$_{in,out}$*dt), %1.1f day lag',ndaylag))
+title(sprintf('Volume entering and leaving per dt (Q$_{in,out}$*dt), %1.2f day lag',ndaylag))
 ylabel('(m$^3$)')
 legend('Q$_{in}$ *dt','Q$_{out}$ *dt')%,'V in moulin')
 %xlabel('Time (yrs)')
