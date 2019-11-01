@@ -41,8 +41,9 @@ Mrmin = 1e-9;  % 1 mm
 HFdoy = 99999999999999;%165; % Mid June
 %
 % hw: height of water
-hw = 1 * H * C.rhoi/C.rhow;  % meters
-%
+hw = 1 * H * C.rhoi/C.rhow;  % Celia need to change this with subglacial model
+
+
 % z: the vertical coordinate system, positive upward
 z = (0:dz:H)';
 nz = numel(z);
