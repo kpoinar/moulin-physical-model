@@ -14,9 +14,9 @@ C.n = 3        % unitless; Glen's law exponent (Schoof 2010)
 
 
 % Subglacialsc model constants
-C.c1 = 1/pi/Lf % units; Melt opening parameter (Schoof 2010)
-C.c2 = A*n^(-n) % units; Closure parameter (Schoof 2010)
-C.c3 = 2^(1/4) * (pi+2)^(1/2)/(pi^(1/4) * (rhow*f)^(1/2)) % units; Flux parameter (Schoof 2010)
+C.c1 = 1/pi/C.Lf % units; Melt opening parameter (Schoof 2010)
+C.c2 = C.A*C.n^(-C.n) % units; Closure parameter (Schoof 2010)
+C.c3 = 2^(1/4) * (pi+2)^(1/2)/(pi^(1/4) * (C.rhow*C.f)^(1/2)) % units; Flux parameter (Schoof 2010)
 
 
 
