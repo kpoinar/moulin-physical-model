@@ -1,5 +1,7 @@
-function [dM, uw, Vadd, Tw] =subglacial(hw,Qout, C, Mr, Tw)
+function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr)
 %
+%!!! note, currently there is no mechanism to deal with temperature, so
+%include_ice_temperature should be set as false!!!!
 % Moulin discharge (Qout) is dependent on the height of the water within the
 % moulin (hw) and the capacity of the subglacial system to accept water.
 
@@ -93,6 +95,7 @@ end
 
 dM  = melt .* dt; %change in radius over the given time step
 Vadd = (C.rhoi ./ C.rhow) .*(pi .* ((Mr+dM) - Mr)); %volume of meltwater for each node
+
 
 
 end
