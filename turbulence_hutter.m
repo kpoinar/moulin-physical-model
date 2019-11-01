@@ -22,9 +22,6 @@ C = makeConstants;
 % internal variables
 
 
-
-
-
 include_ice_temperature = false; %True means that the melt is partially dependent 
                                 %on the ice and water temperature (e.g. Clarke 2002) 
                                 %In this case the water temperature must evolve
@@ -96,9 +93,6 @@ end
 
 dM  = melt .* dt; %change in radius over the given time step
 Vadd = (C.rhoi ./ C.rhow) .*(pi .* ((Mr+dM) - Mr)); %volume of meltwater for each node
-
-
-
 
 
 end
