@@ -1,4 +1,4 @@
-function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt)
+function [dM, Vadd, melt] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
 %
 %!!! note, currently there is no mechanism to deal with temperature, so
 %include_ice_temperature should be set as false!!!!
@@ -14,7 +14,7 @@ function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt)
 %z    = elevation of each model node 0 = bottom of moulin; H= z(top of
 %moulin)
 %Tw    = water temperature in the moulin 
-C = makeConstants;
+
 
 %exports
 %dM  = change in moulin radius due to melting (m) 
@@ -22,7 +22,7 @@ C = makeConstants;
 %Vadd = volume of water added due to melting for each grid cell (m3)
 
 % internal variables
-manrough = 0.03;
+manrough = 0.06;
 fr = 0.1;
 
 include_ice_temperature = false; %True means that the melt is partially dependent 
