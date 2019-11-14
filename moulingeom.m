@@ -202,7 +202,7 @@ for t = time.t
     % wate velocity in the column
     u = conserveWaterMass(Mr,z,u0,z0);
     % Turbulent melting
-%     [dM,Vturb] = turbulence(Mrprev,u,L,dt,H,hw,z,C);
+     [dM, Vadd] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  %% lauren is getting turbulence to work right now...
 %             time.Vturb(cc) = Vturb;
 
     % Elastic deformation: do this last because it is a function of moulin 
