@@ -39,3 +39,7 @@ C.Qcless = 6e4;
 C.Qcmore = 11.5e4;    
 C.R = 8.314;                % ideal gas constant
 C.a = 7e-8;
+
+% constants for the subglacial model
+C.mu = 0.0017914; %Dynamic viscosity of water at 0.01*C (Pa s)
+C.kw = 555.75 .* 0.001; %Thermal conductivity of water (W m-1 K-1)
