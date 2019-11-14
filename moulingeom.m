@@ -202,7 +202,7 @@ for t = time.t
     % wate velocity in the column
     u = conserveWaterMass(Mr,z,u0,z0);
     % Turbulent melting
-     [dM, Vadd] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  %% lauren is getting turbulence to work right now...
+     [dM(:,cc), Vadd] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  %% lauren is getting turbulence to work right now...
 %             time.Vturb(cc) = Vturb;
 
     % Elastic deformation: do this last because it is a function of moulin 
@@ -215,7 +215,7 @@ for t = time.t
 
     %
     % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC + dF + dM + dE + dP;
+    Mr = Mr + dC + dF + dM(:,cc) + dE + dP;
     Mr = max(Mr,Mrmin);
         
     % Record moulin max and min radius at every timestep
