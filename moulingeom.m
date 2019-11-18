@@ -208,7 +208,7 @@ for t = time.t
     Ti = C.T0 * ones(size(z)); % ice temperature: 0∞C
     Tw = C.T0 * ones(size(z)); % water temperature: 0∞C
     % Hutter Turbulence
-    [dM(:,cc), u, Vturb] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
+    [dM, u, Vturb] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
             time.Vturb(cc) = Vturb;%trapz(Vturb,z);
 
     % Elastic deformation: do this last because it is a function of moulin 
@@ -221,7 +221,7 @@ for t = time.t
 
     %
     % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC + dF + dM(:,cc) + dE + dP; % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
+    Mr = Mr + dC + dF + dM + dE + dP; % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
     Mr = max(Mr,Mrmin);
         
     % Record moulin max and min radius at every timestep
