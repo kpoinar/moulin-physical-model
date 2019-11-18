@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
+=======
+function [dM, uw, Vadd] = turbulence_hutter(hw, Qout, Mr, Ti, Tw, z, dt)
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 %
 %!!! note, currently there is no mechanism to deal with temperature, so
 %include_ice_temperature should be set as false!!!!
@@ -6,28 +10,35 @@ function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
 % moulin (hw) and the capacity of the subglacial system to accept water.
 
 %inputs from the moulin model
-%hw   = hight of the water in the moulin (m)
+%hw   = height of the water in the moulin (m)
 %Qout = discharge of water into the subglacial system (m3/s)
 %Mr   = current moulin radius (m)
 %Ti   = ice temperature in *C (from Luthi import file)
-%dt   = timestep  (s)
+%Tw   = water temperature in the moulin
 %z    = elevation of each model node 0 = bottom of moulin; H= z(top of
 %moulin)
-%Tw    = water temperature in the moulin 
-
+%dt   = timestep  (s)
+C = makeConstants;
 
 %exports
-%dM  = change in moulin radius due to melting (m) 
+%dM  = change in moulin radius due to melting (m)
 %uw  = water velocity at each node (m/s)
 %Vadd = volume of water added due to melting for each grid cell (m3)
 
+<<<<<<< HEAD
+=======
+% internal variables
+% Update KP: I added these to C = makeConstants.
+% manrough = 0.03;
+% fr = 0.1;
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 
-include_ice_temperature = false; %True means that the melt is partially dependent 
-                                %on the ice and water temperature (e.g. Clarke 2002) 
-                                %In this case the water temperature must evolve
-                                %via several equations. False
-                                %means that melting is only dependent on
-                                %turbulence (e.g. Gully et al., 2014)
+include_ice_temperature = false; %True means that the melt is partially dependent
+%on the ice and water temperature (e.g. Clarke 2002)
+%In this case the water temperature must evolve
+%via several equations. False
+%means that melting is only dependent on
+%turbulence (e.g. Gully et al., 2014)
 
 if include_ice_temperature
     Ti = importTz('Luthi', z);
@@ -39,7 +50,7 @@ end
 %initialize other variables
 
 
-%% Initiate calculations for turbulent melting 
+%% Initiate calculations for turbulent melting
 
 % logical matrix to determine in what nodes water is present (head given)
 % or not present ==0;
@@ -48,35 +59,52 @@ waterpresent(waterpresent<0) =0;
 
 
 uw = Qout ./Mr;  %calculate water velocity within the moulin column
+% KP: Qout is m3/s so uw needs to be Qout divided by an area
+uw = Qout ./ (pi * Mr.^2);
 uw(waterpresent ==0) =0; % if there is no water in a given cell,
+<<<<<<< HEAD
 
+=======
+%
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 % ------------------------------
 % KP: Keep uw to a max of 3 m/s, artificially for now.  It was getting
 % really large (10^50 m/s!) for areas of the moulin with near-zero cross
 % section.
+<<<<<<< HEAD
 %uw = min(uw,3);
 % ------------------------------
 
 
 
+=======
+uw = min(uw,3);
+% ------------------------------
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 
 % calculate moulin cross-sectional area from radius
-S = pi .* Mr .^2; 
+S = pi .* Mr .^2;
 
-% calculate the effective pressure 
-Pi   = C.rhoi .* C.g .* flipud(z); % ice pressure
-Pw   = C.rhow .*C.g .* waterpresent;
+% calculate the effective pressure
+Pi   = C.rhoi .* C.g .* (max(z)-z); % ice pressure
+Pw   = C.rhow .* C.g .* waterpresent;
 
 Mp   = 2 .* pi .* Mr; % wetted/melting perimeter
-Rh   = Mr ./2; %hydraulic radius 
+% Rh   = Mr ./2; %hydraulic radius
+Rh   = Mr;  % KP -- moulin radius is the same as hydraulic radius, right?
 Dh   = (4*(pi .* Mr.^2)) ./ Mp; %hydrualic diameter
 
-Re   = 4 .* C.rhow .* abs(uw) .* Rh  ./ C.mu; %reynolds number
+Re   = 4 .* C.rhow .* abs(uw) .* Rh  ./ C.mu; %reynolds number kg/m3 * m/s * m / Pa/s
+% = (kg/m/s) / (Pa*s) = 1.
 Pr   = C.mu .* C.cp ./ C.kw;
 Nu   = 0.023 .* Re .^(4/5) .* Pr .^(2/5);
 
 fR   = 8 .* C.g .* (C.manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
+<<<<<<< HEAD
 tau0 = (1/8) .* fR .* C.rhoi .* uw .* abs(uw); % wall stress exerted by turbulent flow 
+=======
+tau0 = (1/8) .* fR .* C.rhoi .* uw .* abs(uw); % wall stress exerted by turbulent flow
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 
 
 if include_ice_temperature
@@ -89,6 +117,7 @@ if include_ice_temperature
     mdot = melt .* ( dz);
     
     dTw =  -uw .* dTwdz  + 1 ./ (C.rhow .* C.cp .* S) ...
+<<<<<<< HEAD
             .* (Mp .* tau0 .* uw - mdot .* (C.Lf + C.cp .* ...
             (Tw - Ti) - ((uw.^2)./2)));
     
@@ -97,12 +126,36 @@ else
     head_loss  = ((uw.^2) .* C.f_moulin .* dz) ./(2.* Dh .* C.g);
     melt       = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
                     (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
+=======
+        .* (Mp .* tau0 .* uw - mdot .* (C.Lf + C.cp .* ...
+        (Tw - Ti) - ((uw.^2)./2)));
+    
+else
+    dz         = nanmean(diff(z)); %find the length of the nodes to use as the length scale
+    head_loss  = ((uw.^2) .* C.fr .* dz) ./(2.* Dh .* C.g);
+    melt       = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
+        (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
     
 end
 
 dM  = melt .* dt; %change in radius over the given time step
+<<<<<<< HEAD
 Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater for each node
+=======
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 
+if max(dM) > 10
+    disp('big melt error')
+end
+%
+% Water volume change:
+% Vadd = (C.rhoi ./ C.rhow) .*(pi .* ((Mr+dM) - Mr)); %volume of meltwater for each node
+% Vadd = trapz(Vadd,z); % return a single number, not a vector
+%
+% KP update: the function needs to return a volume, Vadd, that is the
+% volume of water added to the moulin's water.  It is a 3D volume.
+Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z);
 
 
 end

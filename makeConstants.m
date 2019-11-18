@@ -1,6 +1,6 @@
 function C = makeConstants()
-
-C.To = 273.15; % Kelvin
+ 
+C.T0 = 273.15; % Kelvin
 C.rhoi = 910;  % kg/m3; Ice density
 C.rhow = 1000; % kg/m3; Water density
 C.ki = 2.1;    % J/mKs
@@ -10,13 +10,13 @@ C.g = 9.8;     % m/s2; Gravity
 C.E = 1e9;     % Pa; Young's elastic modulus (Vaughan 1995)
 C.A = 6e-24;   % 1/Pa3/s; Glen's law fluidity coefficient (Schoof 2010)
 C.f = 0.1;     % unitless; Darcy-Weisbach friction factor (0.1 in Matt's code, 0.0375 in Schoof 2010)
-C.n = 3        % unitless; Glen's law exponent (Schoof 2010)
+C.n = 3;        % unitless; Glen's law exponent (Schoof 2010)
 
 
 % Subglacialsc model constants
-C.c1 = 1/pi/C.Lf % units; Melt opening parameter (Schoof 2010)
-C.c2 = C.A*C.n^(-C.n) % units; Closure parameter (Schoof 2010)
-C.c3 = 2^(1/4) * (pi+2)^(1/2) / (pi^(1/4) * (C.rhow*C.f)^(1/2)) % units; Flux parameter (Schoof 2010)
+C.c1 = 1/pi/C.Lf; % units; Melt opening parameter (Schoof 2010)
+C.c2 = C.A*C.n^(-C.n); % units; Closure parameter (Schoof 2010)
+C.c3 = 2^(1/4) * (pi+2)^(1/2) / (pi^(1/4) * (C.rhow*C.f)^(1/2)); % units; Flux parameter (Schoof 2010)
 %      2^(5/4) / pi**(1/4) * sqrt( pi/ ((pi+2)*rho_w*f) ) # from Matt Covington pdf, 
 % for a semi-circular conduit, modified from Schoof whose equation appears to be incorrect. 
 
@@ -40,9 +40,20 @@ C.Qcmore = 11.5e4;
 C.R = 8.314;                % ideal gas constant
 C.a = 7e-8;
 
+<<<<<<< HEAD
 % constants for the subglacial model
 C.manrough = 0.03;
 C.f_moulin = 0.05;
 C.mu = 0.0017914; %Dynamic viscosity of water at 0.01*C (Pa s)
 C.kw = .55575; %Thermal conductivity of water (W m-1 K-1)
 %test
+=======
+
+
+
+% Hutter turbulence parameters
+C.manrough = 0.03;
+C.fr = 0.1;
+C.mu = 0.0017916; % Pa*s at 0∞C, https://www.engineeringtoolbox.com/water-dynamic-kinematic-viscosity-d_596.html
+C.kw = 0.555; % J/(mKs) at 0.01∞C, https://www.engineeringtoolbox.com/water-liquid-gas-thermal-conductivity-temperature-pressure-d_2012.html
+>>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27

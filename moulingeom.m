@@ -15,11 +15,12 @@ chebx = 0;  % chebx=1 is not working yet
 nt = 1000;    % plot every nt timesteps
 artesian = 1;  % allow moulin to shed water?
 
-
+Qoutwinter = 0.01;  % minimum outflux (e.g. wintertime outflux)
+% ^^ Just an estimate (m2/s)
 Qscale = 1;     % factor to scale FOXX runoff by
 ndaylag = 1/24;      % How many days to lag the Qin, Qout by?
 
-E = 5;       % enhancement factor for creep
+E = 1.5;       % enhancement factor for creep
 % E = 1;       % no enhancement
 
 
@@ -33,10 +34,11 @@ R0 = 2;  % radius of moulin initially
 dt = 3600*24 *0.0625; % seconds (1 day here)
 % tmax: time to run model
 tmax = 2.3*sec;%1.7 * sec; % seconds (5 years here)
+tmax = 1.5*sec; % a year and a half
 % vertical spacing
 dz = 1; % meters
 % Minimum borehole width
-Mrmin = 1e-9;  % 1 mm
+Mrmin = 1e-3;  % 1 mm
 % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.
 HFdoy = 99999999999999;%165; % Mid June
 %
@@ -79,7 +81,7 @@ Pw = C.rhow*C.g*hw;
 % Tz: temperature profile in ice
 Tz = importTz(Tdatatype,z);
 % Tair: air temperature timeseries
-Tair = C.To - 8 - cos(2*pi*time.t/sec)*12; % Kelvin at every timestep
+Tair = C.T0 - 8 - cos(2*pi*time.t/sec)*12; % Kelvin at every timestep
 %Tair = C.To - 8 - cos(2*pi*(time.t+0.381*sec)/sec)*12;  % Start time at the melt season onset
 % T: ambient ice temperature
 Tfar = Tz; % Kelvin
@@ -89,7 +91,7 @@ xmax = 30;% 80; % meters; how far away from moulin to use as infinity
 [x,dx,nx] = setupx(dt,chebx,xmax);
 % 
 T = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
-T(:,1) = C.To;   % Melting point at the moulin wall
+T(:,1) = C.T0;   % Melting point at the moulin wall
 %
 % Assign elastic deformation parameters
 sigx = -50e3;%100e3;
@@ -123,7 +125,7 @@ dP = zeros(size(z));
 %Qout = ubottom*pi*R0^2;
 %const = (time.t(end)*Qout) / trapz(time.t,(Tair>C.To) .* (Tair-C.To));
 % Expect Qin to be ~ 10 m3/s
-const = 10 / (max(Tair-C.To));
+const = 10 / (max(Tair-C.T0));
 % Construct an approximate Qin for each timestep, based on air temps:
 % Qin = double(Tair>C.To) .* (Tair-C.To)*const;
 % Qin = zeros(size(time.t));
@@ -146,7 +148,7 @@ Qout = fastsmooth(Qin,nlag/2,3,1);
 Qout = [Qout(end-nlag+1:end) Qout(1:end-nlag)];
 Qout = Qout * 1;
 % In the winter, there is still Qout.  Make it so.
-Qout = max(Qout, 0.001);
+Qout = max(Qout, Qoutwinter);
 %Qout = zeros(size(time.t));
 %
 %
@@ -157,9 +159,9 @@ cc = 0;
 
 for t = time.t
     cc = cc+1;
-    % Consider using the previous moulin radius in all calculations in each
-    % timestep, so that the final result is not dependent on the order in
-    % which I do creep, refreeze, turbulent melt, elastic, etc.
+    % Use the PREVIOUS moulin radius in all calculations in each timestep,
+    % so that the final result is not dependent on the order in which we do
+    % creep, refreeze, turbulent melt, elastic, etc.
     Mrprev = Mr;
     %
     % Check if today is the day that we hydrofracture and reopen the bottom
@@ -172,14 +174,14 @@ for t = time.t
     % Find the water level in the moulin at this timestep
     % Moulin water volume:
     V = watervolume(V,Vturb,Vfrz,Qin(cc),Qout(cc),dt);
-    % Make an artesian spring if V > Vmoulin
+    % Make an artesian spring if allowed and if V > Vmoulin
     if artesian, V = min(trapz(z,pi*Mr.^2),V); end
     % How high does that fill the moulin?
     hw = waterlevel(Mr,z,V);
             time.hw(cc) = hw;
-            time.V(cc) = V;
+            time.V(cc) = V;%trapz(V,z);
     %
-    
+    %
     % Creep deformation: do this first because it is a larger term  
     % Change the water level twice-daily
     %     if mod(cc,0) % afternoon
@@ -188,22 +190,26 @@ for t = time.t
     %         hw = H * C.rhoi/C.rhow;  % meters
     %     end
     dC = creep(Mrprev,z,H,hw,T,dt,E,C);
-    
-    % Refreezing
-%     T(z>hw,1) = Tair(cc);
-%     [~,dF,T,Vfrz] = refreeze(Mrprev,T,z,hw,dF,nx,x,dx,dt);
-%             time.Vfrz(cc) = Vfrz;
     %
-    
+    % Refreezing
+    %  T(z>hw,1) = Tair(cc);
+    %  [~,dF,T,Vfrz] = refreeze(Mrprev,T,z,hw,dF,nx,x,dx,dt);
+    %         time.Vfrz(cc) = Vfrz;
+    %
+    %
     % Turbulent melting: 
     % Water velocity at the bottom
     u0 = -Qout(cc) / (pi*Mr(1)^2*dz);
-    time.u0(cc) = u0;
-    % wate velocity in the column
-    u = conserveWaterMass(Mr,z,u0,z0);
+            time.u0(cc) = u0;
+    % water velocity in the column
+    %u = conserveWaterMass(Mr,z,u0,z0);
+    
     % Turbulent melting
-     [dM(:,cc), Vadd] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  %% lauren is getting turbulence to work right now...
-%             time.Vturb(cc) = Vturb;
+    Ti = C.T0 * ones(size(z)); % ice temperature: 0∞C
+    Tw = C.T0 * ones(size(z)); % water temperature: 0∞C
+    % Hutter Turbulence
+    [dM, u, Vturb] = turbulence_hutter(hw, Qout(cc), Mr, Ti, Tw, z, dt);
+            time.Vturb(cc) = Vturb;%trapz(Vturb,z);
 
     % Elastic deformation: do this last because it is a function of moulin 
     % radius.  Elastic deformation is small and sensitive to water pressure
@@ -215,7 +221,7 @@ for t = time.t
 
     %
     % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC + dF + dM(:,cc) + dE + dP;
+    Mr = Mr + dC + dF + dM + dE + dP;
     Mr = max(Mr,Mrmin);
         
     % Record moulin max and min radius at every timestep
