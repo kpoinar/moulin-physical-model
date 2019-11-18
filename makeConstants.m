@@ -41,5 +41,7 @@ C.R = 8.314;                % ideal gas constant
 C.a = 7e-8;
 
 % constants for the subglacial model
+C.manrough = 0.03;
+C.f_moulin = 0.05;
 C.mu = 0.0017914; %Dynamic viscosity of water at 0.01*C (Pa s)
-C.kw = 555.75 .* 0.001; %Thermal conductivity of water (W m-1 K-1)
+C.kw = .55575; %Thermal conductivity of water (W m-1 K-1)

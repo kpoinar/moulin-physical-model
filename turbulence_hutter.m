@@ -1,4 +1,4 @@
-function [dM, Vadd, melt] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
+function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
 %
 %!!! note, currently there is no mechanism to deal with temperature, so
 %include_ice_temperature should be set as false!!!!
@@ -21,9 +21,6 @@ function [dM, Vadd, melt] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
 %uw  = water velocity at each node (m/s)
 %Vadd = volume of water added due to melting for each grid cell (m3)
 
-% internal variables
-manrough = 0.06;
-fr = 0.1;
 
 include_ice_temperature = false; %True means that the melt is partially dependent 
                                 %on the ice and water temperature (e.g. Clarke 2002) 
@@ -53,6 +50,15 @@ waterpresent(waterpresent<0) =0;
 uw = Qout ./Mr;  %calculate water velocity within the moulin column
 uw(waterpresent ==0) =0; % if there is no water in a given cell,
 
+% ------------------------------
+% KP: Keep uw to a max of 3 m/s, artificially for now.  It was getting
+% really large (10^50 m/s!) for areas of the moulin with near-zero cross
+% section.
+%uw = min(uw,3);
+% ------------------------------
+
+
+
 
 % calculate moulin cross-sectional area from radius
 S = pi .* Mr .^2; 
@@ -69,33 +75,33 @@ Re   = 4 .* C.rhow .* abs(uw) .* Rh  ./ C.mu; %reynolds number
 Pr   = C.mu .* C.cp ./ C.kw;
 Nu   = 0.023 .* Re .^(4/5) .* Pr .^(2/5);
 
-fR   = 8 .* C.g .* (manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
+fR   = 8 .* C.g .* (C.manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
 tau0 = (1/8) .* fR .* C.rhoi .* uw .* abs(uw); % wall stress exerted by turbulent flow 
 
 
 if include_ice_temperature
     
-melt   = (Mp .* C.kw .* Nu .* (Tw - Ti) ./ (4 .* C.Lf .* Rh)) ./( dz);
-   % now the units are the same for both the melts...
-
-dTwdz = (diff(Tw) ./ diff(z));
-dTwdz  = [0, dTw];
-mdot = melt .* ( dz);
-
-dTw =  -uw .* dTwdz  + 1 ./ (C.rhow .* C.cp .* S) ...
-       .* (Mp .* tau0 .* uw - mdot .* (C.Lf + C.cp .* ...
-       (Tw - Ti) - ((uw.^2)./2)));
-   
+    melt   = (Mp .* C.kw .* Nu .* (Tw - Ti) ./ (4 .* C.Lf .* Rh)) ./( dz);
+    % now the units are the same for both the melts...
+    
+    dTwdz = (diff(Tw) ./ diff(z));
+    dTwdz  = [0, dTw];
+    mdot = melt .* ( dz);
+    
+    dTw =  -uw .* dTwdz  + 1 ./ (C.rhow .* C.cp .* S) ...
+            .* (Mp .* tau0 .* uw - mdot .* (C.Lf + C.cp .* ...
+            (Tw - Ti) - ((uw.^2)./2)));
+    
 else
-dz         = nanmean(diff(z)); %find the length of the nodes to use as the length scale
-head_loss  = ((uw.^2) .* fr .* dz) ./(2.* Dh .* C.g);
-melt       = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
-             (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
-         
+    dz         = nanmean(diff(z)); %find the length of the nodes to use as the length scale
+    head_loss  = ((uw.^2) .* C.f_moulin .* dz) ./(2.* Dh .* C.g);
+    melt       = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
+                    (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
+    
 end
 
 dM  = melt .* dt; %change in radius over the given time step
-Vadd = (C.rhoi ./ C.rhow) .*(pi .* ((Mr+dM) - Mr)); %volume of meltwater for each node
+Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater for each node
 
 
 
