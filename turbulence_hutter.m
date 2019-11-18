@@ -52,18 +52,27 @@ waterpresent(waterpresent<0) =0;
 
 
 uw = Qout ./Mr;  %calculate water velocity within the moulin column
+% KP: Qout is m3/s so uw needs to be Qout divided by an area
+uw = Qout ./ (pi * Mr.^2);
 uw(waterpresent ==0) =0; % if there is no water in a given cell,
-
+%
+% ------------------------------
+% KP: Keep uw to a max of 3 m/s, artificially for now.  It was getting
+% really large (10^50 m/s!) for areas of the moulin with near-zero cross
+% section.
+uw = min(uw,3);
+% ------------------------------
 
 % calculate moulin cross-sectional area from radius
 S = pi .* Mr .^2;
 
 % calculate the effective pressure
-Pi   = C.rhoi .* C.g .* flipud(z); % ice pressure
-Pw   = C.rhow .*C.g .* waterpresent;
+Pi   = C.rhoi .* C.g .* (max(z)-z); % ice pressure
+Pw   = C.rhow .* C.g .* waterpresent;
 
 Mp   = 2 .* pi .* Mr; % wetted/melting perimeter
-Rh   = Mr ./2; %hydraulic radius
+% Rh   = Mr ./2; %hydraulic radius
+Rh   = Mr;  % KP -- moulin radius is the same as hydraulic radius, right?
 Dh   = (4*(pi .* Mr.^2)) ./ Mp; %hydrualic diameter
 
 Re   = 4 .* C.rhow .* abs(uw) .* Rh  ./ C.mu; %reynolds number kg/m3 * m/s * m / Pa/s
@@ -97,9 +106,19 @@ else
 end
 
 dM  = melt .* dt; %change in radius over the given time step
-Vadd = (C.rhoi ./ C.rhow) .*(pi .* ((Mr+dM) - Mr)); %volume of meltwater for each node
 
-Vadd = trapz(Vadd,z); % return a single number, not a vector
+if max(dM) > 10
+    disp('big melt error')
+end
+%
+% Water volume change:
+% Vadd = (C.rhoi ./ C.rhow) .*(pi .* ((Mr+dM) - Mr)); %volume of meltwater for each node
+% Vadd = trapz(Vadd,z); % return a single number, not a vector
+%
+% KP update: the function needs to return a volume, Vadd, that is the
+% volume of water added to the moulin's water.  It is a 3D volume.
+Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z);
+
 
 end
 

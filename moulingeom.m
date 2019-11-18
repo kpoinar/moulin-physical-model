@@ -38,7 +38,7 @@ tmax = 1.5*sec; % a year and a half
 % vertical spacing
 dz = 1; % meters
 % Minimum borehole width
-Mrmin = 1e-9;  % 1 mm
+Mrmin = 1e-3;  % 1 mm
 % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.
 HFdoy = 99999999999999;%165; % Mid June
 %
@@ -208,7 +208,7 @@ for t = time.t
     Ti = C.T0 * ones(size(z)); % ice temperature: 0∞C
     Tw = C.T0 * ones(size(z)); % water temperature: 0∞C
     % Hutter Turbulence
-    %[dM, u, Vturb] = turbulence_hutter(hw, Qout(cc), Mr, Ti, Tw, z, dt);
+    [dM, u, Vturb] = turbulence_hutter(hw, Qout(cc), Mr, Ti, Tw, z, dt);
             time.Vturb(cc) = Vturb;%trapz(Vturb,z);
 
     % Elastic deformation: do this last because it is a function of moulin 
@@ -221,7 +221,7 @@ for t = time.t
 
     %
     % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC + dF + dM(:,cc) + dE + dP;
+    Mr = Mr + dC + dF + dM + dE + dP;
     Mr = max(Mr,Mrmin);
         
     % Record moulin max and min radius at every timestep
