@@ -1,4 +1,4 @@
-function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
+function [dM, uw, Vadd, head_loss] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
 
 %
 %!!! note, currently there is no mechanism to deal with temperature, so

@@ -17,7 +17,7 @@ artesian = 1;  % allow moulin to shed water?
 
 Qoutwinter = 0.01;  % minimum outflux (e.g. wintertime outflux)
 % ^^ Just an estimate (m2/s)
-Qscale = 1;     % factor to scale FOXX runoff by
+Qscale = 0.8;     % factor to scale FOXX runoff by
 ndaylag = 1/24;      % How many days to lag the Qin, Qout by?
 
 E = 1.5;       % enhancement factor for creep
@@ -37,7 +37,7 @@ tmax = 2.3*sec;%1.7 * sec; % seconds (5 years here)
 tmax = 1.5*sec; % a year and a half
 % vertical spacing
 dz = 1; % meters
-% Minimum borehole width
+% Minimum moulin width
 Mrmin = 1e-3;  % 1 mm
 % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.
 HFdoy = 99999999999999;%165; % Mid June
@@ -208,7 +208,7 @@ for t = time.t
     Ti = C.T0 * ones(size(z)); % ice temperature: 0∞C
     Tw = C.T0 * ones(size(z)); % water temperature: 0∞C
     % Hutter Turbulence
-    [dM, u, Vturb] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
+    [dM(:,cc), u(:,cc), Vturb, head_loss(:,cc)] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
             time.Vturb(cc) = Vturb;%trapz(Vturb,z);
 
     % Elastic deformation: do this last because it is a function of moulin 
@@ -221,9 +221,13 @@ for t = time.t
 
     %
     % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC + dF + dM + dE + dP; % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
+  %  Mr = Mr + dC + dF + dM(:,cc) + dE + dP; % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
+  %  Mr = max(Mr,Mrmin);
+  %  Mr_out(:,cc) = max(Mr,Mrmin); %lca bug fixing   
+    Mr = Mr + dC + dF + dE + dP +dM(:,cc); %for bug fixing, in standard run should be dM lca 11/18
     Mr = max(Mr,Mrmin);
-        
+    Mr_out(:,cc) = max(Mr,Mrmin); %lca bug fixing 
+    
     % Record moulin max and min radius at every timestep
     time.Mrmm(:,cc) = [min(Mr) max(Mr)];
     %
@@ -288,3 +292,31 @@ xlabel('Moulin radius (m)')
 ylabel('z (m)')
 set(gca,'yaxislocation','right')
 title('Final geometry')
+
+%%
+
+
+colors = brewermap(8760, 'spectral');
+
+figure
+subplot(1,2,1)
+addToolbarExplorationButtons(gcf)
+hold on; box on; grid on 
+for ii = 2500:100:8760
+plot( Mr_out(:,ii), (z), 'color', colors(ii,:))
+end
+
+subplot(1,2,2)
+hold on; box on; grid on 
+for ii = 2500:100:8760
+plot( u(:,ii), (z), 'color', colors(ii,:))
+end
+
+%%
+figure; 
+plot(Qin); hold on; 
+ylabel('Qin')
+yyaxis right; 
+plot(Mr_out(250,:))
+ylabel('moulin radius @ 250m')
+axis([2000 4000 0 1400])
