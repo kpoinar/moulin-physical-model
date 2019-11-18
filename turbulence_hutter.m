@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 function [dM, uw, Vadd] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
-=======
-function [dM, uw, Vadd] = turbulence_hutter(hw, Qout, Mr, Ti, Tw, z, dt)
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
+
 %
 %!!! note, currently there is no mechanism to deal with temperature, so
 %include_ice_temperature should be set as false!!!!
@@ -25,13 +22,12 @@ C = makeConstants;
 %uw  = water velocity at each node (m/s)
 %Vadd = volume of water added due to melting for each grid cell (m3)
 
-<<<<<<< HEAD
-=======
+
 % internal variables
 % Update KP: I added these to C = makeConstants.
 % manrough = 0.03;
 % fr = 0.1;
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
+
 
 include_ice_temperature = false; %True means that the melt is partially dependent
 %on the ice and water temperature (e.g. Clarke 2002)
@@ -62,25 +58,14 @@ uw = Qout ./Mr;  %calculate water velocity within the moulin column
 % KP: Qout is m3/s so uw needs to be Qout divided by an area
 uw = Qout ./ (pi * Mr.^2);
 uw(waterpresent ==0) =0; % if there is no water in a given cell,
-<<<<<<< HEAD
 
-=======
-%
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 % ------------------------------
 % KP: Keep uw to a max of 3 m/s, artificially for now.  It was getting
 % really large (10^50 m/s!) for areas of the moulin with near-zero cross
 % section.
-<<<<<<< HEAD
-%uw = min(uw,3);
-% ------------------------------
-
-
-
-=======
 uw = min(uw,3);
 % ------------------------------
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
+
 
 % calculate moulin cross-sectional area from radius
 S = pi .* Mr .^2;
@@ -100,50 +85,31 @@ Pr   = C.mu .* C.cp ./ C.kw;
 Nu   = 0.023 .* Re .^(4/5) .* Pr .^(2/5);
 
 fR   = 8 .* C.g .* (C.manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
-<<<<<<< HEAD
+
 tau0 = (1/8) .* fR .* C.rhoi .* uw .* abs(uw); % wall stress exerted by turbulent flow 
-=======
-tau0 = (1/8) .* fR .* C.rhoi .* uw .* abs(uw); % wall stress exerted by turbulent flow
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
+
 
 
 if include_ice_temperature
-    
-    melt   = (Mp .* C.kw .* Nu .* (Tw - Ti) ./ (4 .* C.Lf .* Rh)) ./( dz);
-    % now the units are the same for both the melts...
-    
-    dTwdz = (diff(Tw) ./ diff(z));
-    dTwdz  = [0, dTw];
-    mdot = melt .* ( dz);
-    
-    dTw =  -uw .* dTwdz  + 1 ./ (C.rhow .* C.cp .* S) ...
-<<<<<<< HEAD
+    dz          = nanmean(diff(z)); %find the length of the nodes to use as the length scale
+    melt        = (Mp .* C.kw .* Nu .* (Tw - Ti) ./ (4 .* C.Lf .* Rh)) ./( dz);    
+    dTwdz       = (diff(Tw) ./ diff(z));
+    dTwdz       = [0, dTw];
+    dTw         =  -uw .* dTwdz  + 1 ./ (C.rhow .* C.cp .* S) ...
             .* (Mp .* tau0 .* uw - mdot .* (C.Lf + C.cp .* ...
             (Tw - Ti) - ((uw.^2)./2)));
     
 else
-    dz         = nanmean(diff(z)); %find the length of the nodes to use as the length scale
-    head_loss  = ((uw.^2) .* C.f_moulin .* dz) ./(2.* Dh .* C.g);
-    melt       = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
-                    (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
-=======
-        .* (Mp .* tau0 .* uw - mdot .* (C.Lf + C.cp .* ...
-        (Tw - Ti) - ((uw.^2)./2)));
-    
-else
-    dz         = nanmean(diff(z)); %find the length of the nodes to use as the length scale
-    head_loss  = ((uw.^2) .* C.fr .* dz) ./(2.* Dh .* C.g);
-    melt       = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
-        (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
+    dz          = nanmean(diff(z)); %find the length of the nodes to use as the length scale
+    head_loss   = ((uw.^2) .* C.f_moulin .* dz) ./(2.* Dh .* C.g);
+    melt        = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
+             (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
+
     
 end
 
 dM  = melt .* dt; %change in radius over the given time step
-<<<<<<< HEAD
 Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater for each node
-=======
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
 
 if max(dM) > 10
     disp('big melt error')
@@ -155,7 +121,7 @@ end
 %
 % KP update: the function needs to return a volume, Vadd, that is the
 % volume of water added to the moulin's water.  It is a 3D volume.
-Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z);
+%Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z);
 
 
 end

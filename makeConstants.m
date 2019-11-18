@@ -40,20 +40,9 @@ C.Qcmore = 11.5e4;
 C.R = 8.314;                % ideal gas constant
 C.a = 7e-8;
 
-<<<<<<< HEAD
-% constants for the subglacial model
-C.manrough = 0.03;
-C.f_moulin = 0.05;
-C.mu = 0.0017914; %Dynamic viscosity of water at 0.01*C (Pa s)
-C.kw = .55575; %Thermal conductivity of water (W m-1 K-1)
-%test
-=======
-
-
-
 % Hutter turbulence parameters
 C.manrough = 0.03;
-C.fr = 0.1;
+C.f_moulin = 0.0375;
 C.mu = 0.0017916; % Pa*s at 0∞C, https://www.engineeringtoolbox.com/water-dynamic-kinematic-viscosity-d_596.html
 C.kw = 0.555; % J/(mKs) at 0.01∞C, https://www.engineeringtoolbox.com/water-liquid-gas-thermal-conductivity-temperature-pressure-d_2012.html
->>>>>>> 44e9db9b78a1e991137b8a9f69500edfb9047d27
+
