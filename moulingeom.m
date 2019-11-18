@@ -205,8 +205,8 @@ for t = time.t
     %u = conserveWaterMass(Mr,z,u0,z0);
     
     % Turbulent melting
-    Ti = C.T0 * ones(size(z)); % ice temperature: 0°C
-    Tw = C.T0 * ones(size(z)); % water temperature: 0°C
+    Ti = C.T0 * ones(size(z)); % ice temperature: 0âˆžC
+    Tw = C.T0 * ones(size(z)); % water temperature: 0âˆžC
     % Hutter Turbulence
     %[dM, u, Vturb] = turbulence_hutter(hw, Qout(cc), Mr, Ti, Tw, z, dt);
             time.Vturb(cc) = Vturb;%trapz(Vturb,z);
@@ -221,7 +221,7 @@ for t = time.t
 
     %
     % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC + dF + dM + dE + dP;
+    Mr = Mr + dC + dF + dM(:,cc) + dE + dP;
     Mr = max(Mr,Mrmin);
         
     % Record moulin max and min radius at every timestep
