@@ -8,6 +8,10 @@
 %
 %
 clear variables
+close all
+
+set(0,'DefaultFigureWindowStyle','docked')
+
 sec = 86400*365;
 C = makeConstants;
 Tdatatype = 'HarrS4C';
@@ -17,7 +21,7 @@ artesian = 1;  % allow moulin to shed water?
 
 Qoutwinter = 0.01;  % minimum outflux (e.g. wintertime outflux)
 % ^^ Just an estimate (m2/s)
-Qscale = 0.8;     % factor to scale FOXX runoff by
+Qscale = 1.0;     % factor to scale FOXX runoff by
 ndaylag = 1/24;      % How many days to lag the Qin, Qout by?
 
 E = 1.5;       % enhancement factor for creep
@@ -28,13 +32,13 @@ E = 1.5;       % enhancement factor for creep
 
 %
 % H: the ice thickness
-H = 500; % meters
+H = 700; % meters
 R0 = 2;  % radius of moulin initially
 % dt: timestep
-dt = 3600*24 *0.0625; % seconds (1 day here)
+dt = 3600*24 *0.0208333333333333; % seconds - now 0.5h
 % tmax: time to run model
 tmax = 2.3*sec;%1.7 * sec; % seconds (5 years here)
-tmax = 1.5*sec; % a year and a half
+tmax = 0.5*sec; % a year and a half
 % vertical spacing
 dz = 1; % meters
 % Minimum moulin width
@@ -129,11 +133,16 @@ const = 10 / (max(Tair-C.T0));
 % Construct an approximate Qin for each timestep, based on air temps:
 % Qin = double(Tair>C.To) .* (Tair-C.To)*const;
 % Qin = zeros(size(time.t));
-load foxxro_11_12.mat
-Qin = interp1((foxxro.date-foxxro.date(1))*86400,foxxro.runoff,time.t);
-Qin(isnan(Qin)) = 0;
 
 
+% real supraglacial discharge
+%load foxxro_11_12.mat
+%Qin = interp1((foxxro.date-foxxro.date(1))*86400,foxxro.runoff,time.t);
+%Qin(isnan(Qin)) = 0;
+
+%sinusoidal input
+load Qsine.mat
+Qin = interp1(Qsine(:,1), Qsine(:,2), time.t); % run an interp just in case the timeframe changes
 
 % Scale the runoff up or down (usually down)
 Qin = Qin * Qscale;
@@ -180,6 +189,7 @@ for t = time.t
     hw = waterlevel(Mr,z,V);
             time.hw(cc) = hw;
             time.V(cc) = V;%trapz(V,z);
+    hw_out(cc) = hw;        
     %
     %
     % Creep deformation: do this first because it is a larger term  
@@ -208,7 +218,7 @@ for t = time.t
     Ti = C.T0 * ones(size(z)); % ice temperature: 0∞C
     Tw = C.T0 * ones(size(z)); % water temperature: 0∞C
     % Hutter Turbulence
-    [dM(:,cc), u(:,cc), Vturb, head_loss(:,cc)] = turbulence_hutter(hw, Qout(cc), Mrprev, z, dt, C);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
+    [dM(:,cc), u(:,cc), Vturb, head_loss(:,cc)] = turbulence_headloss(hw, Qout(cc), Mrprev, z, dt, C);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
             time.Vturb(cc) = Vturb;%trapz(Vturb,z);
 
     % Elastic deformation: do this last because it is a function of moulin 
@@ -224,7 +234,8 @@ for t = time.t
   %  Mr = Mr + dC + dF + dM(:,cc) + dE + dP; % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
   %  Mr = max(Mr,Mrmin);
   %  Mr_out(:,cc) = max(Mr,Mrmin); %lca bug fixing   
-    Mr = Mr + dC + dF + dE + dP +dM(:,cc); %for bug fixing, in standard run should be dM lca 11/18
+    Mr = Mr + dC + dF + dE + dP + dM(:,cc); %for bug fixing, in standard run should be dM lca 11/18
+    
     Mr = max(Mr,Mrmin);
     Mr_out(:,cc) = max(Mr,Mrmin); %lca bug fixing 
     
@@ -296,27 +307,32 @@ title('Final geometry')
 %%
 
 
-colors = brewermap(8760, 'spectral');
+colors = brewermap(length(Qin), 'spectral');
 
 figure
 subplot(1,2,1)
 addToolbarExplorationButtons(gcf)
 hold on; box on; grid on 
-for ii = 2500:100:8760
+for ii = 1:10:length(Qin)
 plot( Mr_out(:,ii), (z), 'color', colors(ii,:))
 end
 
 subplot(1,2,2)
 hold on; box on; grid on 
-for ii = 2500:100:8760
+for ii = 1:10:length(Qin)
 plot( u(:,ii), (z), 'color', colors(ii,:))
 end
 
+figure
+hold on
+plot(time.t, hw_out)
+
+axis([time.t(1), time.t(24*5), 0 500])
 %%
 figure; 
 plot(Qin); hold on; 
 ylabel('Qin')
 yyaxis right; 
-plot(Mr_out(250,:))
+%plot(Mr_out(250,:))
 ylabel('moulin radius @ 250m')
 axis([2000 4000 0 1400])

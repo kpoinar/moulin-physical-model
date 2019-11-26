@@ -42,7 +42,7 @@ C.a = 7e-8;
 
 % Hutter turbulence parameters
 C.manrough = 0.03;
-C.f_moulin = 0.1;
+C.f_moulin = 0.5;
 C.mu = 0.0017916; % Pa*s at 0∞C, https://www.engineeringtoolbox.com/water-dynamic-kinematic-viscosity-d_596.html
 C.kw = 0.555; % J/(mKs) at 0.01∞C, https://www.engineeringtoolbox.com/water-liquid-gas-thermal-conductivity-temperature-pressure-d_2012.html
 

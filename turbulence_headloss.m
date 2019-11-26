@@ -1,8 +1,6 @@
 function [dM, uw, Vadd, head_loss] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
 
 %
-%!!! note, currently there is no mechanism to deal with temperature, so
-%include_ice_temperature should be set as false!!!!
 % Moulin discharge (Qout) is dependent on the height of the water within the
 % moulin (hw) and the capacity of the subglacial system to accept water.
 
@@ -23,18 +21,19 @@ C = makeConstants;
 %Vadd = volume of water added due to melting for each grid cell (m3)
 
 
-% internal variables
-% Update KP: I added these to C = makeConstants.
-% manrough = 0.03;
-% fr = 0.1;
+ks = 0.01; % meters, this is the mean hight of ice surface roughness elements...
+% currently this is unconstrained...
 
+include_ice_temperature = true; %true means that the change in the ice temperature is included in...
+%the calculated change in moulin radius. If false, it makes the implicit
+%assumption that the ice temperature and water temperature are both at the pressure melting temperature. 
 
-include_ice_temperature = false; %True means that the melt is partially dependent
-%on the ice and water temperature (e.g. Clarke 2002)
-%In this case the water temperature must evolve
-%via several equations. False
-%means that melting is only dependent on
-%turbulence (e.g. Gully et al., 2014)
+Bathurst = true; %true means that the friction factor is calculated using..
+%the Bathurst formulation... this equation is valid when
+%roughness height ./ hydrualic diameter >= 0.05
+% if false, the Colebrook-White formulation will be applied, which is only
+% valid when roughness height ./ hydrualic diameter < 0.05
+
 
 if include_ice_temperature
     Ti = importTz('Luthi', z);
@@ -43,49 +42,38 @@ else
 end
 
 
-%initialize other variables
-
-
 %% Initiate calculations for turbulent melting
 
-% logical matrix to determine in what nodes water is present (head given)
-% or not present ==0;
-waterpresent = hw - z;
+
+waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
 waterpresent(waterpresent<0) =0;
-
-
-uw = Qout ./Mr;  %calculate water velocity within the moulin column
-% KP: Qout is m3/s so uw needs to be Qout divided by an area
-uw = Qout ./ (pi * Mr.^2);
+S = (pi * Mr.^2);
+uw = Qout ./  S; %calculate the water velocity in each node 
 uw(waterpresent ==0) =0; % if there is no water in a given cell,
 
 % ------------------------------
-% KP: Keep uw to a max of 9.3 m/s, artificially for now, which is the terminal velocity.
+% Keep uw to a max of 9.3 m/s, artificially for now, which is the terminal velocity.
 %It was getting really large (10^50 m/s!) for areas of the moulin with near-zero cross
 % section.
+if uw > 9.3
+    disp('big velocity !!!')
+    disp('assigning terminal velocity of 9.3ms-1')
+end
+
 uw = min(uw,9.3);
 % ------------------------------
 
-
-% calculate moulin cross-sectional area from radius
-S = pi .* Mr .^2;
-
-% calculate the effective pressure
-Pi   = C.rhoi .* C.g .* (max(z)-z); % ice pressure
-Pw   = C.rhow .* C.g .* waterpresent;
-
 Mp   = 2 .* pi .* Mr; % wetted/melting perimeter
-
-%Rh   = Mr;  % KP -- moulin radius is the same as hydraulic radius, right?
-%LCA - no, the hydrualic radius is not the actual radius.
-
-Rh   = Mr ./2; %hydraulic radius
 Dh   = (4*(pi .* Mr.^2)) ./ Mp; %hydrualic diameter
 
-Re   = 4 .* C.rhow .* abs(uw) .* Rh  ./ C.mu; %reynolds number kg/m3 * m/s * m / Pa/s
-% = (kg/m/s) / (Pa*s) = 1.
-Pr   = C.mu .* C.cp ./ C.kw;
-Nu   = 0.023 .* Re .^(4/5) .* Pr .^(2/5);
+% just give a flag if the ks/dh ratio is less than 0.05
+if (ks/Dh) < 0.05
+    disp('ks/dh < 0.05')
+    disp('Should be using Colebrook-White')
+end
+
+
+if 
 
 fR   = 8 .* C.g .* (C.manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
 
