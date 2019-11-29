@@ -3,36 +3,46 @@ clear variables
 close all
 clc
 
-C = makeConstants;
-chebx     = 0;  % chebx=1 is not working yet
-dz = 1;
-H  = 700;
-z = (0:dz:H)';
+C       = makeConstants;
+chebx   = 0;  % chebx=1 is not working yet
+dz      = 1;
+H       = 700;
+z       = (0:dz:H)';
 
-R0 = 2;  % radius of moulin initially
-Mr = R0*ones(size(z));
+R0      = 2;  % radius of moulin initially
+Mr      = R0*ones(size(z));
 
-sec = 86400*120;
-dt = 3600*24 * (0.0208333333333333/2); % 0.25 h or 15 minutes
-tmax = 0.5*sec; 
-time.t = dt:dt:tmax; 
+sec     = 86400*120;
+dt      = 3600*24 * (0.0208333333333333/2); % 0.25 h or 15 minutes
+tmax    = 0.5*sec; 
+time.t  = dt:dt:tmax; 
 
 load Qsine.mat
-Qsine(:,2) = Qsine(:,2).* 0.7 ;
-Qin = interp1(Qsine(:,1), Qsine(:,2), time.t, 'linear', 'extrap'); % run an interp just in case the timeframe changes
-Qin(1) = 5;
-Qin = Qin;
-ndaylag = 1/24; 
-nlag = round(ndaylag*24*3600/dt);
-Qout = fastsmooth(Qin,nlag/2,3,1);
-% Qout = max(0,Qout);
-Qout = [Qout(end-nlag+1:end) Qout(1:end-nlag)];
-Qout = Qout * 1;
+Qsine(:,2)  = Qsine(:,2).* 0.7 ;
+Qin         = interp1(Qsine(:,1), Qsine(:,2), time.t, 'linear', 'extrap'); % run an interp just in case the timeframe changes
+
+%The commented info below is for when the subglacial component is not
+%included
+% Qin(1)      = 5;
+% ndaylag     = 1/24; 
+% nlag = round(ndaylag*24*3600/dt);
+% Qout = fastsmooth(Qin,nlag/2,3,1);
+% % Qout = max(0,Qout);
+% Qout = [Qout(end-nlag+1:end) Qout(1:end-nlag)];
+% Qout = Qout * 1;
 
 %  Elastic deformation parameters
 sigx = -50e3;%100e3;
 sigy = -50e3;%-100e3;
 tauxy = 100e3;%100e3;
+
+% Assign hydraulic gradient parameters and water flow speed:
+nz = numel(z);
+ubottom = 1;  % m/s; this is something like 1 mm/sec
+utop = ubottom; % just make something up for now
+u = linspace(ubottom,utop,nz)';
+u0 = ubottom; z0 = 0;
+L = 10e3; % length scale over which to take hydraulic gradient
 
 %%
 
@@ -48,7 +58,7 @@ Bathurst = false; %true means that the friction factor is calculated using..
 % if false, the Colebrook-White formulation will be applied, which is only
 % valid when roughness height ./ hydrualic diameter < 0.05
 
-
+% create ice temperature profiles
 if include_ice_temperature
     Ti = importTz('HarrS4C', z);
 else
@@ -64,41 +74,56 @@ T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1)  = C.T0;   % Melting point at the moulin wall
 E       = 1.0; %enhancement factor
 
+
 %initialize variables 
 
-hw = zeros(1,length(time.t));
-hw(1) = H*.91;
+hw      = zeros(1,length(time.t));
+hwint   = H*.91;
 
-MVol = zeros(1,length(time.t));
+MVol    = zeros(1,length(time.t));
 MVol(1) = hw(1) .* (pi .* Mr(1,1).^2) ;
+
+S       = nan .* zeros(1, length(time.t));
+Qout    = nan .* zeros(1, length(time.t));
 % do a for loop to calculate turbulence
 
 for ii = 1:length(time.t)
     
-
+% calculate Qout using Celia's function
+    % Find the water level in the moulin at this timestep
+    tspan = [time.t(ii),time.t(ii)+dt];
+    
+    if ii == 1 %this provides the initial guess for the moulin water level 
+                % and Qout for the subglacial component
+        y0=[hwint 0.5];
+    else
+        y0 = [hw(ii-1), S(ii-1)];
+    end
+[hw(ii), S(ii), Qout(ii)] = subglacialsc(Mr(:,ii),z,Qin(ii),H,L,C,tspan,y0);
+    
+    
     
     
 waterpresent = hw(1,ii) - z; %logical matrix to determine in what nodes water is present 
 waterpresent(waterpresent<0) =0; 
     
-S(:,ii) = (pi * Mr(:,ii).^2);
+S_moulin(:,ii) = (pi * Mr(:,ii).^2);
 
 
-uw_tmp  = Qout(ii) ./  S(:,ii); %calculate the water velocity in each node 
+uw_tmp  = Qout(ii) ./  S_moulin(:,ii); %calculate the water velocity in each node 
 uw_tmp(waterpresent ==0) =0; % if there is no water in a given cell, 
 
 % % ------------------------------
 % % Keep uw to a max of 9.3 m/s, artificially for now, which is the terminal velocity.
 % %It was getting really large (10^50 m/s!) for areas of the moulin with near-zero cross
 % % section.
-% if uw_tmp > 9.3
-%     disp('big velocity !!!')
-%     disp('assigning terminal velocity of 9.3ms-1')
-% end
-% 
-% uw_tmp = min(uw_tmp,9.3);
-% % ------------------------------ 
+if uw_tmp > 9.3
+    disp('big velocity !!!')
+    disp('assigning terminal velocity of 9.3ms-1')
+end
 
+uw_tmp = min(uw_tmp,9.3);
+% % ------------------------------ 
 uw(:,ii) = uw_tmp;
 
 
@@ -106,7 +131,7 @@ uw(:,ii) = uw_tmp;
 Mp(:,ii)   = 2 .* pi .* Mr(:,ii); % wetted/melting perimeter
 Dh(:,ii)   = (4*(pi .* Mr(:,ii).^2)) ./ Mp(:,ii); %hydrualic diameter
 Rh(:,ii)   = (pi.* Mr(:,ii).^2) ./ Mp(:,ii); % hydraulic radius
-% just give a flag if the ks/dh ratio is less than 0.05
+
 
 % calculate the pressure melting temperature of ice/water %https://glaciers.gi.alaska.edu/sites/default/files/mccarthy/Notes_thermodyn_Aschwanden.pdf
 Pw(:,ii)   = C.rhow .* C.g .* waterpresent;
@@ -158,17 +183,18 @@ dE(:,ii) = elastic(z,Mr(:,ii),hw(ii),H,sigx,sigy,tauxy,C);
 Mr(:,ii+1) = Mr(:,ii) + dM(:,ii) + dC(:,ii) + dE(:,ii); % moulin radius
 MVol(ii+1) = MVol(ii) +  Qin(ii) .*dt - Qout(ii).*dt + Vadd(ii); %moulin volume
 
-mv_tmp = pi .* (Mr(:,ii+1).^2) .* dz;
-mv_tmp = cumsum(mv_tmp);
-[m0, min_index] = min(abs(MVol(ii+1)-mv_tmp));
-extra_water =  MVol(ii+1)-mv_tmp(min_index);
-
-
-hw(ii+1)   = z(min_index) + extra_water ./(pi .* (Mr(min_index,ii+1).^2) );
-hw_tmp = hw(ii+1);
-hw_tmp(hw_tmp <0) =0;
-hw_tmp(hw_tmp >H*.91) =H*.91;
-hw(ii+1) = hw_tmp;
+% for determing new water level when 
+% mv_tmp = pi .* (Mr(:,ii+1).^2) .* dz;
+% mv_tmp = cumsum(mv_tmp);
+% [m0, min_index] = min(abs(MVol(ii+1)-mv_tmp));
+% extra_water =  MVol(ii+1)-mv_tmp(min_index);
+% 
+% 
+% hw(ii+1)   = z(min_index) + extra_water ./(pi .* (Mr(min_index,ii+1).^2) );
+% hw_tmp = hw(ii+1);
+% hw_tmp(hw_tmp <0) =0;
+% hw_tmp(hw_tmp >H*.91) =H*.91;
+% hw(ii+1) = hw_tmp;
 end    
 
 %%
