@@ -65,19 +65,23 @@ uw = min(uw,9.3);
 
 Mp   = 2 .* pi .* Mr; % wetted/melting perimeter
 Dh   = (4*(pi .* Mr.^2)) ./ Mp; %hydrualic diameter
-
+Rh   = (pi.* Mr.^2) ./ Mp; % hydraulic radius
 % just give a flag if the ks/dh ratio is less than 0.05
 if (ks/Dh) < 0.05
     disp('ks/dh < 0.05')
     disp('Should be using Colebrook-White')
 end
 
+% calculate the pressure melting temperature of ice/water %https://glaciers.gi.alaska.edu/sites/default/files/mccarthy/Notes_thermodyn_Aschwanden.pdf
+Pw   = C.rhow .* C.g .* waterpresent;
+Tmw  =  273.16 - 0.098.*(Pw - 611.73);
 
-if 
-
-fR   = 8 .* C.g .* (C.manrough.^2) ./ (Rh.^(1/3)); %Darcy weisbach friction factor for varying conduit geometry
-
-tau0 = (1/8) .* fR .* C.rhoi .* uw .* abs(uw); % wall stress exerted by turbulent flow 
+% select the appropriate parameterization of DW friction factor
+if Bathurst
+    fR = 1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %Bathurst parameterization for DW friction factor
+else
+    fR = (1/(-2.*log10((ks/Dh)./3.7))).^2; %Colebrook-White parameterization for DW friction factor
+end
 
 
 
