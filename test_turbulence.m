@@ -1,4 +1,4 @@
-% test turbulence parameters
+% Stand alone test turbulence parameters 
 clear variables 
 close all
 clc
@@ -18,10 +18,10 @@ tmax = 0.5*sec;
 time.t = dt:dt:tmax; 
 
 load Qsine.mat
-Qsine(:,2) = Qsine(:,2) +1;
+Qsine(:,2) = Qsine(:,2) +5;
 Qin = interp1(Qsine(:,1), Qsine(:,2), time.t, 'linear', 'extrap'); % run an interp just in case the timeframe changes
 Qin(1) = 5;
-Qin = Qin .* 0.5;
+Qin = Qin;
 ndaylag = 1/24; 
 nlag = round(ndaylag*24*3600/dt);
 Qout = fastsmooth(Qin,nlag/2,3,1);
@@ -31,7 +31,7 @@ Qout = Qout * 1;
 
 %%
 
-ks = 0.1;
+ks = 1;
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
 %the calculated change in moulin radius. If false, it makes the implicit
