@@ -218,7 +218,7 @@ for t = time.t
     Ti = C.T0 * ones(size(z)); % ice temperature: 0∞C
     Tw = C.T0 * ones(size(z)); % water temperature: 0∞C
     % Hutter Turbulence
-    [dM(:,cc), u(:,cc), Vturb, head_loss(:,cc)] = turbulence_headloss(hw, Qout(cc), Mrprev, z, dt, C);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
+    [dM(:,cc), u(:,cc), Vturb, head_loss(:,cc)] = turbulence_headloss(hw, Qout(cc), Mrprev, z, dt);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
             time.Vturb(cc) = Vturb;%trapz(Vturb,z);
 
     % Elastic deformation: do this last because it is a function of moulin 
@@ -329,10 +329,4 @@ plot(time.t, hw_out)
 
 axis([time.t(1), time.t(24*5), 0 500])
 %%
-figure; 
-plot(Qin); hold on; 
-ylabel('Qin')
-yyaxis right; 
-%plot(Mr_out(250,:))
-ylabel('moulin radius @ 250m')
-axis([2000 4000 0 1400])
+

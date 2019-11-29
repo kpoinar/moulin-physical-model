@@ -1,4 +1,4 @@
-function [dM, uw, Vadd, head_loss] =turbulence_hutter(hw, Qout, Mr, z, dt, C)
+function [dM, uw, Vadd, hL] =turbulence_hutter(hw, Qout, Mr, z, dt)
 
 %
 % Moulin discharge (Qout) is dependent on the height of the water within the
@@ -21,7 +21,7 @@ C = makeConstants;
 %Vadd = volume of water added due to melting for each grid cell (m3)
 
 
-ks = 0.01; % meters, this is the mean hight of ice surface roughness elements...
+ks = Mr ./10; % meters, this is the mean hight of ice surface roughness elements...
 % currently this is unconstrained...
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
@@ -38,7 +38,7 @@ Bathurst = true; %true means that the friction factor is calculated using..
 if include_ice_temperature
     Ti = importTz('Luthi', z);
 else
-    Ti = NaN;
+    Ti = NaN; %#ok<UNRCH>
 end
 
 
@@ -74,49 +74,48 @@ end
 
 % calculate the pressure melting temperature of ice/water %https://glaciers.gi.alaska.edu/sites/default/files/mccarthy/Notes_thermodyn_Aschwanden.pdf
 Pw   = C.rhow .* C.g .* waterpresent;
-Tmw  =  273.16 - 0.098.*(Pw - 611.73);
+Tmw  =  273.16 - 0.098.*(Pw - 611.73); 
+
 
 % select the appropriate parameterization of DW friction factor
 if Bathurst
     fR = 1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %Bathurst parameterization for DW friction factor
 else
-    fR = (1/(-2.*log10((ks/Dh)./3.7))).^2; %Colebrook-White parameterization for DW friction factor
+    fR = (1./(-2.*log10((ks/Dh)./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
 end
 
+
+% calculate the lengthscale over which head loss is determined...
+% this is simply the length of the model grid cells unless they become
+% non-uniform
+dz          = nanmean(diff(z));
+
+% calculate head loss following Munson 2005
+hL  =  ((uw.^2) .* fR .* dz) ./(2 .* Dh .* C.g);
 
 
 if include_ice_temperature
-    dz          = nanmean(diff(z)); %find the length of the nodes to use as the length scale
-    melt        = (Mp .* C.kw .* Nu .* (Tw - Ti) ./ (4 .* C.Lf .* Rh)) ./( dz);    
-    dTwdz       = (diff(Tw) ./ diff(z));
-    dTwdz       = [0, dTw];
-    dTw         =  -uw .* dTwdz  + 1 ./ (C.rhow .* C.cp .* S) ...
-            .* (Mp .* tau0 .* uw - mdot .* (C.Lf + C.cp .* ...
-            (Tw - Ti) - ((uw.^2)./2)));
+    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dz)) ./ (2 .* pi .* Mr .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
+    %This tis modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
+    % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
+    % include the surrounding ice temperature 
     
 else
-    dz          = nanmean(diff(z)); %find the length of the nodes to use as the length scale
-    head_loss   = ((uw.^2) .* C.f_moulin .* dz) ./(2.* Dh .* C.g);
-    melt        = (Qout .* C.rhow .* C.g .* (head_loss ./ dz))./ ...
-             (2 .* pi .* C.Lf .* Mr); % these units are m per second of wall melt
-
-    
+    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dz)) ./ (2 .* pi .* Mr .* C.rhoi .* C.Lf); %#ok<UNRCH>
+    % This parameterization is closer to that which is traditionally used
+    % to calculate melting within a subglacial channel where the ice and
+    % water are at the same temperature
 end
 
-dM  = melt .* dt; %change in radius over the given time step
-Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater for each node
+% Make sure that there is no melting in places without water
+dM_dt(waterpresent == 0) = 0;
 
-if max(dM) > 10
-    disp('big melt error')
-end
-%
-% Water volume change:
-% Vadd = (C.rhoi ./ C.rhow) .*(pi .* ((Mr+dM) - Mr)); %volume of meltwater for each node
-% Vadd = trapz(Vadd,z); % return a single number, not a vector
-%
-% KP update: the function needs to return a volume, Vadd, that is the
-% volume of water added to the moulin's water.  It is a 3D volume.
-%Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z);
+dM  = dM_dt .* dt; %change in radius over the given time step
+
+Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater gained due to melting the surrounding ice
+
+
+
 
 
 end

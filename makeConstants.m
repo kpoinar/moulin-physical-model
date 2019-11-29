@@ -40,9 +40,7 @@ C.Qcmore = 11.5e4;
 C.R = 8.314;                % ideal gas constant
 C.a = 7e-8;
 
-% Hutter turbulence parameters
-C.manrough = 0.03;
-C.f_moulin = 0.5;
+% Turbulence parameters
 C.mu = 0.0017916; % Pa*s at 0∞C, https://www.engineeringtoolbox.com/water-dynamic-kinematic-viscosity-d_596.html
 C.kw = 0.555; % J/(mKs) at 0.01∞C, https://www.engineeringtoolbox.com/water-liquid-gas-thermal-conductivity-temperature-pressure-d_2012.html
-
+C.cw = 4210  ; %J / (kg * K)   heat capacity of water for unit mass,  from Jarosch & Gundmundsson (2012)
