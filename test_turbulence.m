@@ -4,7 +4,7 @@ close all
 clc
 
 C = makeConstants;
-
+chebx     = 0;  % chebx=1 is not working yet
 dz = 1;
 H  = 700;
 z = (0:dz:H)';
@@ -18,7 +18,7 @@ tmax = 0.5*sec;
 time.t = dt:dt:tmax; 
 
 load Qsine.mat
-Qsine(:,2) = Qsine(:,2) +5;
+Qsine(:,2) = Qsine(:,2).* 0.7 ;
 Qin = interp1(Qsine(:,1), Qsine(:,2), time.t, 'linear', 'extrap'); % run an interp just in case the timeframe changes
 Qin(1) = 5;
 Qin = Qin;
@@ -29,9 +29,14 @@ Qout = fastsmooth(Qin,nlag/2,3,1);
 Qout = [Qout(end-nlag+1:end) Qout(1:end-nlag)];
 Qout = Qout * 1;
 
+%  Elastic deformation parameters
+sigx = -50e3;%100e3;
+sigy = -50e3;%-100e3;
+tauxy = 100e3;%100e3;
+
 %%
 
-ks = 1;
+ks = 0.1;
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
 %the calculated change in moulin radius. If false, it makes the implicit
@@ -49,6 +54,15 @@ if include_ice_temperature
 else
     Ti = NaN; %#ok<UNRCH>
 end
+
+Tz      = importTz('HarrS4C',z);
+Tfar    = Tz; % Kelvin
+xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
+[x,dx,nx]...
+        = setupx(dt,chebx,xmax);
+T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
+T(:,1)  = C.T0;   % Melting point at the moulin wall
+E       = 1.0; %enhancement factor
 
 %initialize variables 
 
@@ -99,8 +113,8 @@ Tmw(:,ii)  =  273.16 - 9.8e-8.*(Pw(:,ii) - 611.73);
 if Bathurst
     fR(:,ii) = 1./((-1.987.* log10(ks./(5.15.*Rh(:,ii)))).^2); %Bathurst parameterization for DW friction factor
 else
-    %fR(:,ii) = (1./(-2.*log10((ks./Dh(:,ii))./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
-    fR(:,ii) = 50;
+    fR(:,ii) = (1./(-2.*log10((ks./Dh(:,ii))./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
+    %fR(:,ii) = 0.01;
 end
 
 dz          = nanmean(diff(z));
@@ -109,7 +123,7 @@ hL(:,ii)  =  ((uw(:,ii).^2) .* fR(:,ii) .* dz) ./(2 .* Dh(:,ii) .* C.g);
 
 if include_ice_temperature
     dM_dt(:,ii) =    (C.rhow .* C.g .* Qout(ii) .* (hL(:,ii)./dz)) ...
-               ./ (2 .* pi .* Mr(:,ii) .* C.rhoi .* (C.cw .* (Tmw(:,ii) - Ti) + C.Lf)); 
+               ./ (2 .* pi .* Mr(:,ii) .* C.rhoi .* (C.cw .* (Tmw(:,ii)- Ti ) + C.Lf)); 
     %This tis modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
     % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
     % include the surrounding ice temperature 
@@ -129,16 +143,16 @@ dM_dt(:,ii) = dM_dt_tmp;
 
 dM(:,ii)  = dM_dt(:,ii) .* dt; %change in radius over the given time step
 
-
-
 Vadd(ii) = C.rhoi/C.rhow * trapz(2*pi*Mr(:,ii).*dM(:,ii), z);
 
+dC(:,ii) = creep(Mr(:,ii),z,H,hw(ii),T,dt,E,C);
+dE(:,ii) = elastic(z,Mr(:,ii),hw(ii),H,sigx,sigy,tauxy,C);
 
 
 
 
 %advance the forloop
-Mr(:,ii+1) = Mr(:,ii) + dM(:,ii); % moulin radius
+Mr(:,ii+1) = Mr(:,ii) + dM(:,ii) + dC(:,ii) + dE(:,ii); % moulin radius
 MVol(ii+1) = MVol(ii) +  Qin(ii) .*dt - Qout(ii).*dt + Vadd(ii); %moulin volume
 
 mv_tmp = pi .* (Mr(:,ii+1).^2) .* dz;
@@ -150,7 +164,7 @@ extra_water =  MVol(ii+1)-mv_tmp(min_index);
 hw(ii+1)   = z(min_index) + extra_water ./(pi .* (Mr(min_index,ii+1).^2) );
 hw_tmp = hw(ii+1);
 hw_tmp(hw_tmp <0) =0;
-hw_tmp(hw_tmp >H) =H;
+hw_tmp(hw_tmp >H*.91) =H*.91;
 hw(ii+1) = hw_tmp;
 end    
 
@@ -168,13 +182,39 @@ plot(Qout)
 
 %%
 
-figure
-subplot(1,2,1)
-hold on
-plot(Mr, z)
+color1 = brewermap(length(Mr), 'spectral');
 
-subplot(1,2,2)
-plot(Ti-273.15,z)
+figure
+subplot(1,4,1)
+hold on
+for ii = 1:96:length(Mr)
+plot(Mr(:,ii), z, 'color', color1(ii,:))
+end
+title('Radius')
+
+subplot(1,4,2)
+hold on
+for ii = 1:96:length(Mr)-1
+plot(dM(:,ii), z, 'color', color1(ii,:))
+end
+title('Melting')
+
+
+
+subplot(1,4,3)
+hold on
+for ii = 1:96:length(Mr)-1
+plot(dC(:,ii), z, 'color', color1(ii,:))
+end
+title('Creep')
+
+subplot(1,4,4)
+hold on
+for ii = 1:96:length(Mr)-1
+plot(dE(:,ii), z, 'color', color1(ii,:))
+end
+title('Elastic')
+
 % 
 % waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
 % waterpresent(waterpresent<0) =0;
