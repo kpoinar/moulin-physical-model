@@ -14,7 +14,7 @@ function dC = creep(Mr,z,H,hw,T,dt,E,C)
 %A = G.A0less * exp(-G.Qless / G.R ./ (T));
 % Pressure:
 P = C.rhoi*C.g*(H-z);
-A = flowlawexponent(mean(T,2),P,C);
+A = flowlawexponent(mean(T,2),P,C) ;
 
 % Ice hydrostatic stress (closure)
 sigzi = C.rhoi*C.g*(H-z);

@@ -9,7 +9,7 @@ dz      = 1;
 H       = 700;
 z       = (0:dz:H)';
 
-R0      = 3;  % radius of moulin initially
+R0      = 2;  % radius of moulin initially
 Mr      = R0*ones(size(z));
 
 sec     = 86400*120;
@@ -19,8 +19,8 @@ time.t  = dt:dt:tmax;
 
 load Qsine.mat
 Qsine  = Qsine(8:end,:) ;
-Qin         = interp1(Qsine(:,1), Qsine(:,2), time.t, 'linear', 'extrap'); % run an interp just in case the timeframe changes
-Qin(Qin<1) =1;
+Qin         = interp1(Qsine(:,1), Qsine(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+Qin(Qin>5) =5;
 Qin =Qin*0.5 +1.5;
 %The commented info below is for when the subglacial component is not
 %included
@@ -53,7 +53,7 @@ include_ice_temperature = true; %true means that the change in the ice temperatu
 %the calculated change in moulin radius. If false, it makes the implicit
 %assumption that the ice temperature and water temperature are both at the pressure melting temperature. 
 
-Bathurst = false; %true means that the friction factor is calculated using..
+Bathurst = true; %true means that the friction factor is calculated using..
 %the Bathurst formulation... this equation is valid when
 %roughness height ./ hydrualic diameter >= 0.05
 % if false, the Colebrook-White formulation will be applied, which is only
@@ -131,7 +131,7 @@ for ii = 1:length(time.t)
     
     % select the appropriate parameterization of DW friction factor
     if Bathurst
-        fR(:,ii) = 1./((-1.987.* log10(ks./(5.15.*Rh(:,ii)))).^2); %#ok<UNRCH> %Bathurst parameterization for DW friction factor
+        fR(:,ii) =10* 1./((-1.987.* log10(ks./(5.15.*Rh(:,ii)))).^2); %#ok<UNRCH> %Bathurst parameterization for DW friction factor
     else
         fR(:,ii) = (1./(-2.*log10((ks./Dh(:,ii))./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
         %fR(:,ii) = 0.01;
@@ -177,8 +177,9 @@ for ii = 1:length(time.t)
     
     % calculate Qout using Celia's function
     % Find the water level in the moulin at this timestep
-    tspan = [time.t(ii),time.t(ii) + dt];
-    
+   % tspan = [time.t(ii),time.t(ii) + dt];
+        tspan = [0, dt];
+
     %     if ii == 1 %this provides the initial guess for the moulin water level
     %                 % and Qout for the subglacial component
     %         y0=[hwint 0.5];
@@ -235,8 +236,8 @@ plot(Qout)
 
 %%
 spacing = 1;
-endlength = 86; %length(Mr)
-color1 = brewermap(length(Mr), 'spectral');
+endlength = length(Pw);
+color1 = brewermap(endlength, 'spectral');
 
 figure
 subplot(1,4,1)
