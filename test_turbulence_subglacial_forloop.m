@@ -6,19 +6,19 @@ clc
 C       = makeConstants;
 chebx   = 0;  % chebx=1 is not working yet
 dz      = 1;
-H       = 700;
+H       = 1000;
 z       = (0:dz:H)';
 
-sec     = 86400*50;
-dt      = 600; % 1 minutes
+sec     = 86400*90;
+dt      = 300; % seconds 300 = 5min
 tmax    = 0.5*sec; 
 time.t  = dt:dt:tmax; 
 
-load Qsine.mat
-Qsine  = Qsine(8:end,:) ;
-Qin         = interp1(Qsine(:,1), Qsine(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-Qin(Qin>5) =5;
-Qin =Qin*0.3 +2.7;
+load Qcosines.mat
+Qcos2  = Qcos2(8:end,:) ;
+Qin         = interp1(Qcos2(:,1), Qcos2(:,4), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+%Qin(Qin>5) =5;
+Qin =Qin*0.3 +3.5;
 %The commented info below is for when the subglacial component is not
 %included
 % Qin(1)      = 5;
@@ -29,7 +29,7 @@ Qin =Qin*0.3 +2.7;
 % Qout = [Qout(end-nlag+1:end) Qout(1:end-nlag)];
 % Qout = Qout * 1;
 
-%  Elastic deformation parameters
+%  Elastic deformation parameters %increase to reduce elastic response
 sigx = -50e3;%100e3;
 sigy = -50e3;%-100e3;
 tauxy = 100e3;%100e3;
@@ -40,7 +40,7 @@ ubottom = 1;  % m/s; this is something like 1 mm/sec
 utop = ubottom; % just make something up for now
 u = linspace(ubottom,utop,nz)';
 u0 = ubottom; z0 = 0;
-L = 15e3; % length scale over which to take hydraulic gradient
+L = 35e3; % length scale over which to take hydraulic gradient
 
 %%
 
@@ -58,25 +58,27 @@ Bathurst = true; %true means that the friction factor is calculated using..
 
 % create ice temperature profiles
 if include_ice_temperature
-    Ti = importTz('HarrS4C', z);
+    Ti = importTz('Ryser_foxx', z);
+    %Ti      = flipud(Ti);
 else
     Ti = NaN; %#ok<UNRCH>
 end
 
-Tz      = importTz('HarrS4C',z);
+Tz      = importTz('Ryser_foxx',z);
+%Tz      = flipud(Tz);
 Tfar    = Tz; % Kelvin
 xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
 [x,dx,nx]...
         = setupx(dt,chebx,xmax);
 T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1)  = C.T0;   % Melting point at the moulin wall
-E       = 1; %enhancement factor
+E       = 5; %enhancement factor
 
 
 %initialize variables 
 
 hw      = zeros(1,length(time.t));
-hwint   = H*.91;
+hwint   = H;
 hw(1)   = hwint;
 R0      = 2;  % radius of moulin initially
 Mr(:,1) = R0*ones(size(z));
@@ -84,7 +86,7 @@ MoulinSysVol(:,1) ...
         = pi .* Mr(:,1).^2;
 
 S       = nan .* zeros(1, length(time.t));
-S(1)    = 1.5;
+S(1)    = 2;
 % Qout    = nan .* zeros(1, length(time.t));
 % Qout(1) = Qin(1);
 SubSysVol(1) ...
@@ -178,21 +180,30 @@ for ii = 1:length(time.t)
     %line...
     
     
-    
     dM(:,ii)  = dM_dt(:,ii) .* dt; %change in radius over the given time step
     
     Vadd(ii) = C.rhoi/C.rhow * trapz(2*pi*Mr(:,ii).*dM(:,ii), z);
     
     dC(:,ii) = creep(Mr(:,ii),z,H,hw(ii),T,dt,E,C);
     dE(:,ii) = elastic(z,Mr(:,ii),hw(ii),H,sigx,sigy,tauxy,C);
- 
+%     if 
+%         dE(:,ii) =0;
+%         disp('dE = 0 triggered')
+%     end
+    % dealing with some elastic issues
+    dE_tmp = dE(:,ii);
+    dE_tmp(waterpresent == 0) = 0;
+    %dE_tmp(dE_tmp>0) = 0;    
+    dE(:,ii) = dE_tmp;
+   
+    
     %subglacial system
     dS(ii)    = dt.* (C.c1 .* Qout(ii) .* ((C.rhow .* C.g .* hw(ii)) ./L)...
                  - C.c2 .* ((C.rhoi .* C.g .* H - C.rhow .* C.g .* hw(ii)).^C.n) .* S(ii)); %change in subglacial channel geometry
         
     % advance the for loop
     %1/calculate the new moulin radius
-    Mr(:,ii+1) = Mr(:,ii) + dC(:,ii)+ dM(:,ii); % + dC(:,ii) + dE(:,ii); % moulin radius
+    Mr(:,ii+1) = Mr(:,ii) + dC(:,ii)+ dM(:,ii) + dE(:,ii); % moulin radius
     %2/calculate the new subglacial cross-sectional area
     S(ii+1)    = S(ii) + dS(ii);
     
@@ -241,7 +252,7 @@ end
 figure
 subplot(2,1,1)
 hold on
-plot([0 3000], [700*0.91 700*0.91])
+plot([0 3000], [H*0.91 H*0.91])
 plot(hw)
 title('hw, straight line is flotation')
 subplot(2,1,2)
@@ -251,7 +262,7 @@ plot(Qout)
 legend('Qin', 'Qout')
 %%
 spacing = 10;
-endlength = length(dM)-1;
+endlength = 3000-1;
 color1 = brewermap(endlength, 'spectral');
 
 figure
@@ -260,6 +271,8 @@ hold on
 for ii = 1:spacing:endlength
 plot(Mr(:,ii), z, 'color', color1(ii,:))
 end
+%plot([0 3000], [700*0.91 700*0.91])
+axis([0 3 0 H])
 title('Radius')
 
 subplot(1,4,2)
@@ -285,6 +298,47 @@ plot(dE(:,ii), z, 'color', color1(ii,:))
 end
 title('Elastic')
 
+
+
+%%
+
+spacing = 12;
+endlength = 12960;
+color1 = brewermap(1440, 'spectral');
+
+figure
+subplot(1,4,1)
+hold on
+for ii = 1:12:1440
+
+plot(Mr(:,ii+11371), z, 'color', color1(ii,:))
+
+end
+%plot([0 3000], [700*0.91 700*0.91])
+axis([0.5 2.1 0 H])
+title('Radius')
+
+subplot(1,4,2)
+hold on
+for ii = 1:12:1440
+
+plot(dM(:,ii+11371), z, 'color', color1(ii,:))
+
+end
+%plot([0 3000], [700*0.91 700*0.91])
+%axis([0.5 2.1 0 H])
+title('melting')
+
+subplot(1,4,3)
+hold on
+for ii = 1:12:1440
+
+plot(dC(:,ii+11371), z, 'color', color1(ii,:))
+
+end
+%plot([0 3000], [700*0.91 700*0.91])
+%axis([0.5 2.1 0 H])
+title('creep')
 % 
 % waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
 % waterpresent(waterpresent<0) =0;
