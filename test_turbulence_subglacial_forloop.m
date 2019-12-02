@@ -1,6 +1,6 @@
 % Stand alone test turbulence parameters 
 clear variables 
-close all
+%close all
 clc
 
 C       = makeConstants;
@@ -9,11 +9,8 @@ dz      = 1;
 H       = 700;
 z       = (0:dz:H)';
 
-R0      = 2;  % radius of moulin initially
-Mr      = R0*ones(size(z));
-
-sec     = 86400*10;
-dt      = 900; % 1 minutes
+sec     = 86400*50;
+dt      = 600; % 1 minutes
 tmax    = 0.5*sec; 
 time.t  = dt:dt:tmax; 
 
@@ -21,7 +18,7 @@ load Qsine.mat
 Qsine  = Qsine(8:end,:) ;
 Qin         = interp1(Qsine(:,1), Qsine(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
 Qin(Qin>5) =5;
-Qin =Qin*0.5 +1.5;
+Qin =Qin*0.3 +2.7;
 %The commented info below is for when the subglacial component is not
 %included
 % Qin(1)      = 5;
@@ -43,7 +40,7 @@ ubottom = 1;  % m/s; this is something like 1 mm/sec
 utop = ubottom; % just make something up for now
 u = linspace(ubottom,utop,nz)';
 u0 = ubottom; z0 = 0;
-L = 20e3; % length scale over which to take hydraulic gradient
+L = 15e3; % length scale over which to take hydraulic gradient
 
 %%
 
@@ -79,29 +76,48 @@ E       = 1; %enhancement factor
 %initialize variables 
 
 hw      = zeros(1,length(time.t));
-hwint   = H*.91-100;
+hwint   = H*.91;
 hw(1)   = hwint;
-
-MVol    = zeros(1,length(time.t));
-MVol(1) = hw(1) .* (pi .* Mr(1,1).^2) ;
+R0      = 2;  % radius of moulin initially
+Mr(:,1) = R0*ones(size(z));
+MoulinSysVol(:,1) ...
+        = pi .* Mr(:,1).^2;
 
 S       = nan .* zeros(1, length(time.t));
-S(1)    = 2;
-Qout    = nan .* zeros(1, length(time.t));
-Qout(1) = Qin(1);
+S(1)    = 1.5;
+% Qout    = nan .* zeros(1, length(time.t));
+% Qout(1) = Qin(1);
+SubSysVol(1) ...
+        = S(1) .* L;
 
+TotWaterVol(1) ...
+        = SubSysVol(1) + hw(1).*pi .* (R0.^2);
 
+ExVol(1)= 0;    
 
 % do a for loop to calculate turbulence
 
-for ii = 1:length(time.t)-1
+for ii = 1:length(time.t)
     
+    % calculate the Qout for a given subglacial configuration and moulin
+    % head 
+    Qout(ii)  = C.c3 .* (S(ii).^(5/4)) ...
+               .* (((C.rhow .* C.g .* hw(ii)) ./L).^ (0.5)); %There may be times i.e. when hw > 0.91*H, where there should be some type of sheet flow
+%     tmp = sqrt((S(ii) ./pi));
+%     psi = C.rhow .* C.g .*hw(ii) ./L;
+%     Qout1(ii) = S(ii) .* (((((pi+2).* psi .*tmp) + (2.* tmp .* psi))./(C.rhow .* C.f)).^(0.5));
+      %Qout(ii) = sqrt(((S(ii).^(8/3)) .* psi)./ 850);
+            if Qout(ii) < 0 %trigger only if something odd has happened and Qout becomes negative
+                Qout(ii)        = 0;
+                 disp('Qout is negative!!')
+                 disp('Assigning Qout==0')
+            end
+            
     waterpresent = hw(1,ii) - z; %logical matrix to determine in what nodes water is present
     waterpresent(waterpresent<0) =0;
     
     S_moulin(:,ii) = (pi * Mr(:,ii).^2);
-    
-    
+        
     uw_tmp  = Qout(ii) ./  S_moulin(:,ii); %calculate the water velocity in each node
     uw_tmp(waterpresent ==0) =0; % if there is no water in a given cell,
     
@@ -117,8 +133,6 @@ for ii = 1:length(time.t)-1
     uw_tmp = min(uw_tmp,9.3);
     % % ------------------------------
     uw(:,ii) = uw_tmp;
-    
-    
     
     Mp(:,ii)   = 2 .* pi .* Mr(:,ii); % wetted/melting perimeter
     Dh(:,ii)   = (4*(pi .* Mr(:,ii).^2)) ./ Mp(:,ii); %hydrualic diameter
@@ -160,6 +174,10 @@ for ii = 1:length(time.t)-1
     dM_dt_tmp(waterpresent == 0) = 0;
     dM_dt(:,ii) = dM_dt_tmp;
     
+    %This is where something needs to be added for melting above the water
+    %line...
+    
+    
     
     dM(:,ii)  = dM_dt(:,ii) .* dt; %change in radius over the given time step
     
@@ -167,59 +185,55 @@ for ii = 1:length(time.t)-1
     
     dC(:,ii) = creep(Mr(:,ii),z,H,hw(ii),T,dt,E,C);
     dE(:,ii) = elastic(z,Mr(:,ii),hw(ii),H,sigx,sigy,tauxy,C);
+ 
+    %subglacial system
+    dS(ii)    = dt.* (C.c1 .* Qout(ii) .* ((C.rhow .* C.g .* hw(ii)) ./L)...
+                 - C.c2 .* ((C.rhoi .* C.g .* H - C.rhow .* C.g .* hw(ii)).^C.n) .* S(ii)); %change in subglacial channel geometry
+        
+    % advance the for loop
+    %1/calculate the new moulin radius
+    Mr(:,ii+1) = Mr(:,ii) + dC(:,ii)+ dM(:,ii); % + dC(:,ii) + dE(:,ii); % moulin radius
+    %2/calculate the new subglacial cross-sectional area
+    S(ii+1)    = S(ii) + dS(ii);
+    
+    %3/calculate the volume of the new system
+    SubSysVol(ii+1)  =  S(ii+1).*L; %thenew cross sectional area times the length
+    MoulinSysVol(:,ii+1) = pi .* (Mr(:,ii+1).^2) .* dz; %new radius *pi *node length (depth and time field)
+    
+    %4/calculate new volume of water in the system
+    TotWaterVol(ii+1) = TotWaterVol(ii) + Qin(ii).* dt - Qout(ii).*dt + Vadd(ii) + dS(ii).*(C.rhoi./C.rhow);
+    %total vol for next timestep
+                  %prev Total vol + Qin over time step - qout over time
+                  %step + volume of water created from turbulent melting in the moulin (from melting ice)
+                  % + volume of water created from turbulent melting in
+                  % subglacial channel (from melting ice)
+    
+    %5/calculate new moulin water level 
+    watertofillmoulin = TotWaterVol(ii+1) - SubSysVol(ii+1); %calculate the volume of water remaining to fill the moulin
+%     if watertofillmoulin<0
+%         watertofillmoulin =0;
+%     end
+    
+    mv_tmp            = cumsum(MoulinSysVol(:,ii+1)); %calculate the cumulative volumen of water
+    [m0, min_index]   = min(abs(watertofillmoulin-mv_tmp)); %find the nearest node/height
+    extra_water       = watertofillmoulin-mv_tmp(min_index); %determine if a small up or down adjustment needs to be made
     
     
-    
-    
-    %advance the forloop
-    Mr(:,ii+1) = Mr(:,ii) + dM(:,ii) + dC(:,ii) + dE(:,ii); % moulin radius
-    MVol(ii+1) = MVol(ii) +  Qin(ii) .*dt - Qout(ii).*dt + Vadd(ii); %moulin volume
-    
-    % calculate Qout using Celia's function
-    % Find the water level in the moulin at this timestep
-   % tspan = [time.t(ii),time.t(ii) + dt];
-        tspan = [0, dt];
-
-    %     if ii == 1 %this provides the initial guess for the moulin water level
-    %                 % and Qout for the subglacial component
-    %         y0=[hwint 0.5];
-    %     else
-    %         y0 = [hw(ii), S(ii)];
-    %     end
-    
-    y0 = [hw(ii), S(ii)];
-    
-    [hw(ii+1), S(ii+1), Qout(ii+1)] = subglacialsc(Mr(:,ii+1),z,Qin(ii+1),H,L,C,tspan,y0);
+    hw(ii+1)   = z(min_index) + extra_water ./(pi .* (Mr(min_index,ii+1).^2) ); %calculate the small adjustment
     
     if hw(ii+1) > H
         hw(ii+1)    = H;
+        ExVol(ii+1) = TotWaterVol(ii+1) - SubSysVol(ii+1) - sum(MoulinSysVol(:,ii+1));
+        disp('Water above ice surface !!!')
         
-    elseif isnan(hw(ii+1))
-        hw(ii+1)    = H;
-        Qout(ii+1)  = C.c3 .* (S(ii).^(5/4)) .* (((C.rhow .* C.g .* H) ./L).^ (0.5)); %some estimate of sheet opening (?)
-        S(ii+1)     = S(ii) + C.c1 .* Qout(ii) .* ((C.rhow .* C.g .* H) ./L)...
-            - C.c2 .* ((C.rhoi .* C.g .* H - C.rhow .* C.g .* H).^C.n) .* S(ii); % Schoof SI equation 1 without sliding opening
-    else
-        hw(ii+1)    = hw(ii+1);
     end
     
-    if Qout(ii+1) < 0
-        Qout(ii+1) = 0;
-        ii
+    if hw(ii+1) < 0
+        hw(ii+1) =0;
+        disp('Something bad happened: hw is less than zero !!!')
+        disp('Perhaps a timestep issue')
     end
-    
-    % for determing new water level when
-    % mv_tmp = pi .* (Mr(:,ii+1).^2) .* dz;
-    % mv_tmp = cumsum(mv_tmp);
-    % [m0, min_index] = min(abs(MVol(ii+1)-mv_tmp));
-    % extra_water =  MVol(ii+1)-mv_tmp(min_index);
-    %
-    %
-    % hw(ii+1)   = z(min_index) + extra_water ./(pi .* (Mr(min_index,ii+1).^2) );
-    % hw_tmp = hw(ii+1);
-    % hw_tmp(hw_tmp <0) =0;
-    % hw_tmp(hw_tmp >H*.91) =H*.91;
-    % hw(ii+1) = hw_tmp;
+
 end
 
 %%
@@ -227,16 +241,17 @@ end
 figure
 subplot(2,1,1)
 hold on
-plot([0 3000], [700 700])
+plot([0 3000], [700*0.91 700*0.91])
 plot(hw)
+title('hw, straight line is flotation')
 subplot(2,1,2)
 hold on
 plot(Qin)
 plot(Qout)
-
+legend('Qin', 'Qout')
 %%
-spacing = 1;
-endlength = length(Pw);
+spacing = 10;
+endlength = length(dM)-1;
 color1 = brewermap(endlength, 'spectral');
 
 figure
