@@ -31,4 +31,16 @@ switch Tdatatype
         harr15.S4_C_zeta(1) = 1;
         harr15.Tsmooth = fastsmooth(interp1(harr15.S4_C_zeta,harr15.S4_C_temp_C+273.15,linspace(0,1,100)),10,3,1);
         Tz = interp1(linspace(0,1,100),harr15.Tsmooth,z/H);
+    case 'Ryser_foxx'
+        load fielddata/Luthi_temps_2015.mat
+        luthi15.FOXX1_C_zeta = (luthi15.FOXX1_depth_m - min(luthi15.FOXX1_depth_m)) / (-min(luthi15.FOXX1_depth_m));
+        luthi15.FOXX1_C_zeta(1) = 1;
+        luthi15.Tsmooth = fastsmooth(interp1(luthi15.FOXX1_C_zeta,luthi15.FOXX1_temp_C+273.15,linspace(0,1,100)),10,3,1);
+        Tz = interp1(linspace(0,1,100),luthi15.Tsmooth,z/H);
+    case 'Ryser_gull'
+        load fielddata/Luthi_temps_2015.mat
+        luthi15.GULL_C_zeta = (luthi15.GULL_depth_m - min(luthi15.GULL_depth_m)) / (-min(luthi15.GULL_depth_m));
+        luthi15.GULL_C_zeta(1) = 1;
+        luthi15.Tsmooth = fastsmooth(interp1(luthi15.GULL_C_zeta,luthi15.GULL_temp_C+273.15,linspace(0,1,100)),10,3,1);
+        Tz = interp1(linspace(0,1,100),luthi15.Tsmooth,z/H);    
 end
