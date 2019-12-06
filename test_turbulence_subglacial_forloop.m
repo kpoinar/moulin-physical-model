@@ -9,16 +9,20 @@ dz      = 1;
 H       = 1000;
 z       = (0:dz:H)';
 
-sec     = 86400*90;
+sec     = 86400*15;
 dt      = 300; % seconds 300 = 5min
-tmax    = 0.5*sec; 
+tmax    = sec; 
 time.t  = dt:dt:tmax; 
 
 load Qcosines.mat
-Qcos2  = Qcos2(8:end,:) ;
-Qin         = interp1(Qcos2(:,1), Qcos2(:,4), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-%Qin(Qin>5) =5;
-Qin =Qin*0.3 +3.5;
+Qcos2  = Qcos2(1:end,:) ;
+Qin         = interp1(Qcos2(:,1), Qcos2(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+%Qin(24761:end) = 0;
+Qin =Qin*0.8 +3; %for fake values
+%Qin =0.8*Qin+4.5; %for real values 
+figure; plot(Qin); hold on; 
+
+%Qin(:) =3;
 %The commented info below is for when the subglacial component is not
 %included
 % Qin(1)      = 5;
@@ -40,8 +44,11 @@ ubottom = 1;  % m/s; this is something like 1 mm/sec
 utop = ubottom; % just make something up for now
 u = linspace(ubottom,utop,nz)';
 u0 = ubottom; z0 = 0;
-L = 35e3; % length scale over which to take hydraulic gradient
+L = 15e3; % length scale over which to take hydraulic gradient
 
+%% create a non cylinderical initial radius
+ initrad = (z+(H/0.5)) ./ (H/1);
+ 
 %%
 
 ks = 0.1;
@@ -72,7 +79,7 @@ xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
         = setupx(dt,chebx,xmax);
 T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1)  = C.T0;   % Melting point at the moulin wall
-E       = 5; %enhancement factor
+E       = 10; %enhancement factor
 
 
 %initialize variables 
@@ -80,8 +87,9 @@ E       = 5; %enhancement factor
 hw      = zeros(1,length(time.t));
 hwint   = H;
 hw(1)   = hwint;
-R0      = 2;  % radius of moulin initially
-Mr(:,1) = R0*ones(size(z));
+R0      = 2.5;  % radius of moulin initially
+%Mr(:,1) = R0*ones(size(z));
+Mr(:,1) = initrad; %To use this, the moulin should be filled 
 MoulinSysVol(:,1) ...
         = pi .* Mr(:,1).^2;
 
@@ -92,8 +100,10 @@ S(1)    = 2;
 SubSysVol(1) ...
         = S(1) .* L;
 
+ %TotWaterVol(1) ...
+ %        = SubSysVol(1) + hw(1).*pi .* (R0.^2);
 TotWaterVol(1) ...
-        = SubSysVol(1) + hw(1).*pi .* (R0.^2);
+        = SubSysVol(1) + hw(1).*pi .* (mean(Mr(:,1))).^2;
 
 ExVol(1)= 0;    
 
@@ -105,7 +115,9 @@ for ii = 1:length(time.t)
     % head 
     Qout(ii)  = C.c3 .* (S(ii).^(5/4)) ...
                .* (((C.rhow .* C.g .* hw(ii)) ./L).^ (0.5)); %There may be times i.e. when hw > 0.91*H, where there should be some type of sheet flow
-%     tmp = sqrt((S(ii) ./pi));
+
+           
+           %     tmp = sqrt((S(ii) ./pi));
 %     psi = C.rhow .* C.g .*hw(ii) ./L;
 %     Qout1(ii) = S(ii) .* (((((pi+2).* psi .*tmp) + (2.* tmp .* psi))./(C.rhow .* C.f)).^(0.5));
       %Qout(ii) = sqrt(((S(ii).^(8/3)) .* psi)./ 850);
@@ -235,7 +247,7 @@ for ii = 1:length(time.t)
     if hw(ii+1) > H
         hw(ii+1)    = H;
         ExVol(ii+1) = TotWaterVol(ii+1) - SubSysVol(ii+1) - sum(MoulinSysVol(:,ii+1));
-        disp('Water above ice surface !!!')
+        %disp('Water above ice surface !!!')
         
     end
     
@@ -261,8 +273,8 @@ plot(Qin)
 plot(Qout)
 legend('Qin', 'Qout')
 %%
-spacing = 10;
-endlength = 3000-1;
+spacing = 100;
+endlength = 4320-1;
 color1 = brewermap(endlength, 'spectral');
 
 figure
@@ -272,7 +284,7 @@ for ii = 1:spacing:endlength
 plot(Mr(:,ii), z, 'color', color1(ii,:))
 end
 %plot([0 3000], [700*0.91 700*0.91])
-axis([0 3 0 H])
+%axis([0 3 0 H])
 title('Radius')
 
 subplot(1,4,2)
@@ -301,111 +313,5 @@ title('Elastic')
 
 
 %%
-
-spacing = 12;
-endlength = 12960;
-color1 = brewermap(1440, 'spectral');
-
-figure
-subplot(1,4,1)
-hold on
-for ii = 1:12:1440
-
-plot(Mr(:,ii+11371), z, 'color', color1(ii,:))
-
-end
-%plot([0 3000], [700*0.91 700*0.91])
-axis([0.5 2.1 0 H])
-title('Radius')
-
-subplot(1,4,2)
-hold on
-for ii = 1:12:1440
-
-plot(dM(:,ii+11371), z, 'color', color1(ii,:))
-
-end
-%plot([0 3000], [700*0.91 700*0.91])
-%axis([0.5 2.1 0 H])
-title('melting')
-
-subplot(1,4,3)
-hold on
-for ii = 1:12:1440
-
-plot(dC(:,ii+11371), z, 'color', color1(ii,:))
-
-end
-%plot([0 3000], [700*0.91 700*0.91])
-%axis([0.5 2.1 0 H])
-title('creep')
-% 
-% waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
-% waterpresent(waterpresent<0) =0;
-% S = (pi * Mr.^2);
-% uw = Qout ./  S; %calculate the water velocity in each node 
-% uw(waterpresent ==0) =0; % if there is no water in a given cell,
-% 
-% % ------------------------------
-% % Keep uw to a max of 9.3 m/s, artificially for now, which is the terminal velocity.
-% %It was getting really large (10^50 m/s!) for areas of the moulin with near-zero cross
-% % section.
-% if uw > 9.3
-%     disp('big velocity !!!')
-%     disp('assigning terminal velocity of 9.3ms-1')
-% end
-% 
-% uw = min(uw,9.3);
-% % ------------------------------
-% 
-% Mp   = 2 .* pi .* Mr; % wetted/melting perimeter
-% Dh   = (4*(pi .* Mr.^2)) ./ Mp; %hydrualic diameter
-% Rh   = (pi.* Mr.^2) ./ Mp; % hydraulic radius
-% % just give a flag if the ks/dh ratio is less than 0.05
-% if (ks/Dh) < 0.05
-%     disp('ks/dh < 0.05')
-%     disp('Should be using Colebrook-White')
-% end
-% 
-% 
-% 
-% 
-% % select the appropriate parameterization of DW friction factor
-% if Bathurst
-%     fR = 1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %Bathurst parameterization for DW friction factor
-% else
-%     fR = (1./(-2.*log10((ks/Dh)./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
-% end
-% 
-% 
-% % calculate the lengthscale over which head loss is determined...
-% % this is simply the length of the model grid cells unless they become
-% % non-uniform
-% dz          = nanmean(diff(z));
-% 
-% % calculate head loss following Munson 2005
-% hL  =  ((uw.^2) .* fR .* dz) ./(2 .* Dh .* C.g);
-% 
-% 
-% if include_ice_temperature
-%     dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dz)) ./ (2 .* pi .* Mr .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
-%     %This tis modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
-%     % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
-%     % include the surrounding ice temperature 
-%     
-% else
-%     dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dz)) ./ (2 .* pi .* Mr .* C.rhoi .* C.Lf); %#ok<UNRCH>
-%     % This parameterization is closer to that which is traditionally used
-%     % to calculate melting within a subglacial channel where the ice and
-%     % water are at the same temperature
-% end
-% 
-% % Make sure that there is no melting in places without water
-% dM_dt(waterpresent == 0) = 0;
-% 
-% dM  = dM_dt .* dt; %change in radius over the given time step
-% 
-% Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater gained due to melting the surrounding ice
-% 
-% 
-% 
+figure; 
+set(gcf, 'position', [ 1006         349        2093         981])

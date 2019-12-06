@@ -252,20 +252,22 @@ legend('Qin', 'Qout')
 %%
 spacing = 10;
 endlength = length(dM)-1;
-color1 = brewermap(endlength, 'spectral');
+color1 = brewermap(145, 'rdbu');
 
 figure
 subplot(1,4,1)
-hold on
-for ii = 1:spacing:endlength
-plot(Mr(:,ii), z, 'color', color1(ii,:))
-end
+% hold on
+% for ii = 2952:1:2952+144
+% plot(Mr(:,ii), z, 'color', color1(ii-2951,:))
+% end
+plot(Mr(:,2952), z, 'color', color1(1,:))
+plot(Mr(:,2952+144), z, 'color', color1(144,:))
 title('Radius')
 
 subplot(1,4,2)
 hold on
-for ii = 1:spacing:endlength
-plot(dM(:,ii), z, 'color', color1(ii,:))
+for ii = 2952:1:2952+144
+plot(dM(:,ii), z, 'color', color1(ii-2951,:))
 end
 title('Melting')
 
@@ -273,15 +275,15 @@ title('Melting')
 
 subplot(1,4,3)
 hold on
-for ii = 1:spacing:endlength
-plot(dC(:,ii), z, 'color', color1(ii,:))
+for ii = 2952:1:2952+144
+plot(dC(:,ii), z, 'color', color1(ii-2951,:))
 end
 title('Creep')
 
 subplot(1,4,4)
 hold on
-for ii = 1:spacing:endlength
-plot(dE(:,ii), z, 'color', color1(ii,:))
+for ii = 2952:1:2952+144
+plot(dE(:,ii), z, 'color', color1(ii-2951,:))
 end
 title('Elastic')
 
