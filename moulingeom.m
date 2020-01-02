@@ -9,60 +9,53 @@
 %
 clear variables
 close all
+%% define som basic parameters
+C         = makeConstants;  %constants used for parameterizations 
+Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
+numofdays = 5;             %set the number of days for the model run
+H         = 500;            % ice thickness, meters
+R0        = 3;              % radius of moulin initially
+L         = 25e3;           % Length of the subglacial channel
 
-set(0,'DefaultFigureWindowStyle','docked')
-C = makeConstants;
+chebx     = 0;              % chebx=1 is not working yet
+nt        = 1000;           % plot every nt timesteps
+artesian  = 1;              % allow moulin to shed water?
+Qscale    = 1;              % factor to scale FOXX runoff by
+E         = 5;              % enhancement factor for creep
 
-% Model duration and time characterisitcs
-sec = 86400*90;
-tmax = sec .* 1 ; % 90 days %duration of the model run
-dt = 3600*24 *(0.0208333333333333/2); % seconds - now 0.25h %TIMESTEP
-time.t = dt:dt:tmax; % seconds
+HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
+%% set the vertical model components
+dz        = 1; %  vertical spacing, meters
+z         = (0:dz:H)';
 
+%% set the duration of the model run
+sec       = 86400*numofdays;   %seconds * days
+dt        = 900;        % Timestep, seconds (15 minutes)
+tmax      = sec;        % seconds (5 years here)
+time.t    = dt:dt:tmax; % seconds
 
-% Various tweakable parameters
-Tdatatype = 'HarrS4C';
-chebx     = 0;  % chebx=1 is not working yet
-nt        = 1000;    % plot every nt timesteps
-artesian  = 1;  % allow moulin to shed water?
-HFdoy = 99999999999999;%165; % Mid June
-
-ndaylag   = 1/24;      % How many days to lag the Qin, Qout by?
-
-
-% Qin and Qout
-load Qsine.mat
-Qscale  = 1;
-Qin     = interp1(Qsine(:,1), Qsine(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-Qin     = Qin * Qscale;
-
-% Readjust Qout to be Qin but smoothed and lagged by some days
-nlag    = round(ndaylag*24*3600/dt);
-Qout    = fastsmooth(Qin,nlag/2,3,1);
-Qout    = [Qout(end-nlag+1:end) Qout(1:end-nlag)];
-Qoutwinter ...
-        = 0.01;  % minimum outflux (e.g. wintertime outflux) m3/s
-Qout    = max(Qout, Qoutwinter);
-
-
-%moulin characteristics
-H       = 700; % meters % H: the ice thickness
-R0      = 2;  % radius of moulin initially
-Mrmin   = 1e-3;  % minimum moulin radius, meters
-
-dz      = 1; % vertical spacing % meters
-z       = (0:dz:H)'; %index 1 is the bottom of the moulin, index(H) is ice surface
-E       = 1.0;       % enhancement factor for creep, 1.0 = no enhancement
-
-%initializated moulin info
-hw      = 1 * H * C.rhoi/C.rhow;  % Celia need to change this with subglacial model
-Pw      = C.rhow*C.g*hw;  %Pw: water pressure at flotation
-Mr      = ones(size(z)); %initialize moulin geometry 
-Mrinit  = R0*Mr(:,1); %intial moulin geometry
+%% set Qin 
+% Construct an approximate Qin for each timestep, based on air temps:
+% Qin = double(Tair>C.To) .* (Tair-C.To)*const;
+% Qin = zeros(size(time.t));
+% Use predetermined Qins of various types
+load Qcosines.mat %1 = time, 2 cosine function, 3 
+Qcos2   = Qcos2(1:end,:) ;
+%change Qcos2 column for different types: 1. cosine, 2. cosine with small
+%melt event, 3. cosine with large melt event, 4. quasi-real data
+Qin     = interp1(Qcos2(:,1), Qcos2(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+Qin     = Qin*0.8 +3; %scale Qin to deal with a few model issues
 
 
-% ice characteristics
-Tz      = importTz(Tdatatype,z);
+% figure
+% hold on
+% plot(time.t(1:48*4), Qcos2(1:48*4,2))
+% plot(time.t(1:48*4), Qcos2(1:48*4,3))
+% plot(time.t(1:48*4), Qcos2(1:48*4,4))
+% plot(time.t(1:48*4), Qcos2(1:48*4,5))
+clear Qcos2
+%% set Ice temperature characteristics 
+Tz      = importTz('Ryser_foxx',z);
 Tfar    = Tz; % Kelvin
 xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
 [x,dx,nx]...
@@ -70,20 +63,53 @@ xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
 T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1)  = C.T0;   % Melting point at the moulin wall
 
+%% define initial moulin characteristics
 
-% Moulin water volume
-i       = z<=hw;
-V0      = trapz(z(i),pi*Mr(i).^2);
-V       = V0; 
-Vturb   = 0; 
-Vfrz    = 0;
-% 
-Pw = C.rhow*C.g*hw;  
+%hw      = zeros(1,length(time.t));
+hwint   = H ; %set the inital water level as 
+hw(1)   = hwint;
+Mrmin   = 1e-9;  % 1 mm
+Mr(:,1) = R0*ones(size(z));
 
-%  Elastic deformation parameters
+%create a non cylinderical initial radius
+% initrad = (z+(H/0.5)) ./ (H/1);
+% Mr(:,1) = initrad; %To use this, the moulin should be filled 
+
+%% Set turbulence parameters
+
+relative_roughness = 0.1; %increasing this value increases the amount of melting due to turbulence.
+
+include_ice_temperature = true; %true means that the change in the ice temperature is included in...
+%the calculated change in moulin radius. If false, it makes the implicit
+%assumption that the ice temperature and water temperature are both at the pressure melting temperature. 
+
+if include_ice_temperature
+    Ti = Tz;
+else
+    Ti = NaN; %#ok<UNRCH>
+end
+
+Bathurst = true; %true means that the friction factor is calculated using..
+%the Bathurst formulation... this equation is valid when
+%roughness height ./ hydrualic diameter >= 0.05
+% if false, the Colebrook-White formulation will be applied, which is only
+% valid when roughness height ./ hydrualic diameter < 0.05
+
+%% Assign elastic deformation parameters
 sigx = -50e3;%100e3;
 sigy = -50e3;%-100e3;
 tauxy = 100e3;%100e3;
+
+%% Set up initial figure
+
+figure(3); clf;
+NP = 4; ii=1;
+subplot(1,NP,1); hold on; title('Moulin radius'); xlabel('meters'); ii=ii+1;
+subplot(1,NP,ii); hold on; title('Creep'); xlabel('m / dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Refreezing'); xlabel('m / dt'); ii=ii+1;
+subplot(1,NP,ii); hold on; title('Turbulent melt'); xlabel('m /dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Potential energy melt-out'); xlabel('m /dt'); ii=ii+1;
+subplot(1,NP,ii); hold on; title('Elastic'); xlabel('m / dt')
 %
 % Record minimum and maximum moulin diameter
 time.Mrmm = zeros(2,numel(time.t));
@@ -98,162 +124,113 @@ dC = zeros(size(z));
 dM = zeros(size(z));
 dP = zeros(size(z));
 
-%% Run the model
-% Step through time
+
+%% Step through time
 cc = 0;
 
-for t = time.t
+for t = time.t(1)
     cc = cc+1;
-    % Use the PREVIOUS moulin radius in all calculations in each timestep,
-    % so that the final result is not dependent on the order in which we do
-    % creep, refreeze, turbulent melt, elastic, etc.
+    % Consider using the previous moulin radius in all calculations in each
+    % timestep, so that the final result is not dependent on the order in
+    % which I do creep, refreeze, turbulent melt, elastic, etc.
     Mrprev = Mr;
- 
-%     % Check if today is the day that we hydrofracture and reopen the bottom
-%     % of the moulin:
-%     if ~mod(HFdoy*86400 - t,sec)
-%         fprintf('Hydrofracture event! at t=%1.2f years (cc=%d)\n',t/sec,cc)
-%         Mr = max(Mr,R0);
-%     end
     
-% Find the water level in the moulin at this timestep
-    % Moulin water volume:
-    V = watervolume(V,Vturb,Vfrz,Qin(cc),Qout(cc),dt);
-    % Make an artesian spring if allowed and if V > Vmoulin
-    if artesian, V = min(trapz(z,pi*Mr.^2),V); end
-    % How high does that fill the moulin?
-    [hw, cumvol, M0, min_index] = waterlevel(Mr,z,V);
-       time.hw(cc)  = hw;
-       time.V(cc)   = V;
-      
+    % Check if today is the day that we hydrofracture and reopen the bottom
+    % of the moulin:
+    if ~mod(HFdoy*86400 - t,sec)
+        fprintf('Hydrofracture event! at t=%1.2f years (cc=%d)\n',t/sec,cc)
+        Mr = max(Mr,R0);
+    end
+    %
+   
+%%%%%%%%%%
+%Water level and subglacial conditions
+    
+    tspan = [t,t+dt];
+    if cc == 1
+        y0=[hw, 0.5];
+    elseif cc > 1
+        y0 = [hw, S];
+    end
+
+    [hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0);
+    time.S(cc)    = S;
+    time.hw(cc)   = hw;
+    time.Qout(cc) = Qout;
+    
+% % % % %     if tmp > limit
+% % % % %         break
+% % % % %     end
+%     % Moulin water volume:
+%     V = watervolume(V,Vturb,Vfrz,Qin(cc),Qout(cc),dt);
+%     % Make an artesian spring if V > Vmoulin
+%     if artesian, V = min(trapz(z,pi*Mr.^2),V); end
+%     % How high does that fill the moulin?
+%     hw = waterlevel(Mr,z,V);
+%             time.hw(cc) = hw;
+%             time.V(cc) = V;
 
 
-% Creep deformation: do this first because it is a larger term  
-    % Change the water level twice-daily
+
+%%%%%%%%% dC: Creep deformation
+%Creep deformation: do this first because it is a larger term  
     dC = creep(Mrprev,z,H,hw,T,dt,E,C);
-    time.dC(:,cc)     = dC; %preserve the creep change
-    %
-    % Refreezing
-    %  T(z>hw,1) = Tair(cc);
-    %  [~,dF,T,Vfrz] = refreeze(Mrprev,T,z,hw,dF,nx,x,dx,dt);
-    %         time.Vfrz(cc) = Vfrz;
-    %
-    %
+    time.dC(:,cc) = dC;
+    
+    
+%%%%%%%%% dF: Refreezing
+% Refreezing
+%     T(z>hw,1) = Tair(cc);
+%     [~,dF,T,Vfrz] = refreeze(Mrprev,T,z,hw,dF,nx,x,dx,dt);
+%             time.Vfrz(cc) = Vfrz;
+
+
+
+%%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-    %u = conserveWaterMass(Mr,z,u0,z0);
-    % physically based turbulence
-    [dM, u, Vturb, head_loss] = turbulence_headloss(hw, Qout(cc), Mrprev, z, dt);  % dM(:,cc) for bug fixing, in standard run should be dM lca 11/18
-            time.Vturb(cc) = Vturb;
-            time.dM(:,cc)  = dM;
-            time.uw(:,cc)  = u;
-            time.head_loss(:,cc) ...
-                           = head_loss;
-    % Elastic deformation: do this last because it is a function of moulin 
-    % radius.  Elastic deformation is small and sensitive to water pressure
+  [dM, uw, Vadd] = turbulence(hw, Qout, Mrprev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
+   time.dM(:,cc)  =  dM;
+   time.uw(:,cc)  =  uw;
+   time.Vadd(cc)  = Vadd;
+
+%%%%%%%%%   
+    %deal with the Vadd term by adding it to the next Qin timestep so that
+    %it is integrated 
+    if cc < length(time.t)
+        Qin(cc +1) = Qin(cc+1) + Vadd./dt;
+    end
+    
+%%%%%%%%% dE: Elastic deformation   
+% Elastic deformation: do this last because it is a function of moulin 
+  % radius.  Elastic deformation is small and sensitive to water pressure
     dE = elastic(z,Mrprev,hw,H,sigx,sigy,tauxy,C);
-            time.dE(:,cc)   = dE;
+    time.dE(:,cc) = dE;
 
-    %
-    % Potential energy-based melting above the water line
-    %dP = potentialdrop(Qin(cc),z,hw,Mrprev,dt,C);
-
-    %
     % Now actually sum all the contributions to moulin size:
-     
-    Mr = Mr + dC + dF + dE + dP + dM; %for bug fixing, in standard run should be dM lca 11/18
-            time.Mr(:,cc) = Mr;
-            
-    Mr = max(Mr,Mrmin);
-            time.Mr_minapplied(:,cc) = Mr;
-
-    % Record moulin max and min radius at every timestep
-            time.Mrmm(:,cc) = [min(Mr) max(Mr)];
+    Mr = Mr + dC; % + dF + dM + dE + dP;
+    %Mr = max(Mr,Mrmin);
+        
+    % Record the used moulin geometry 
+    time.Mr(:,cc) = Mr;
     %
     % Record volume capacity of moulin
     time.Vcapacity(cc) = trapz(z,pi*Mr.^2);
     %
-
+    % Plot profiles sometimes
+    if ~mod(cc,nt)
+        figure(3); ii=1;
+            [~,jw] = min(abs(z-hw));
+            subplot(1,NP,1); plot(Mr,z,Mr(jw),hw,'*k'); title(sprintf('Moulin radius at t=%1.1f days',t/3600/24)); ii=ii+1;
+            subplot(1,NP,ii); plot(dC,z,dC(jw),hw,'*k'); ii=ii+1;
+%             subplot(1,NP,ii); plot(dF,z,dF(jw),hw,'*k'); ii=ii+1;
+            subplot(1,NP,ii); plot(dM,z,dM(jw),hw,'*k'); ii=ii+1;
+%             subplot(1,NP,ii); plot(dP,z,dP(jw),hw,'*k'); ii=ii+1;
+            subplot(1,NP,ii); plot(dE,z,dE(jw),hw,'*k');
+    end
     %
 end
 %%
-NPanels = 4; pan = 1;
-spacing = 96; % daily with 15 min time steps
-color1  = brewermap(length(time.t), '*spectral');
-
-
-figure
-subplot(1, NPanels,pan)
-hold on
-title('elastic')
-xlabel('meters')
-for ii = 1:spacing: length(time.t)
-plot(time.dE(:,ii),z, 'color', color1(ii,:))
-
-end
-
-
-
-
-subplot(1, NPanels,pan+1)
-hold on
-title('Creep')
-xlabel('meters')
-for ii = 1:spacing: length(time.t)
-plot(time.dC(:,ii),z, 'color', color1(ii,:))
-
-end
-
-subplot(1, NPanels,pan+2)
-hold on
-title('Turbulent melting')
-xlabel('meters')
-for ii = 1:spacing: length(time.t)
-plot(time.dM(:,ii),z, 'color', color1(ii,:))
-
-end
-
-subplot(1, NPanels,pan+3)
-
-hold on 
-title('Moulin radius')
-xlabel('meters')
-ylabel('purple early, red late')
-for ii = 1:spacing: length(time.t)
-plot(time.Mr(:,ii),z, 'color', color1(ii,:))
-end
-%%
-% 
-% NP = 4; ii=1;
-% subplot(1,NP,1); hold on; title('Moulin radius'); xlabel('meters'); ii=ii+1;
-% subplot(1,NP,ii); hold on; title('Creep'); xlabel('m / dt'); ii=ii+1;
-% % subplot(1,NP,ii); hold on; title('Refreezing'); xlabel('m / dt'); ii=ii+1;
-% subplot(1,NP,ii); hold on; title('Turbulent melt'); xlabel('m /dt'); ii=ii+1;
-% % subplot(1,NP,ii); hold on; title('Potential energy melt-out'); xlabel('m /dt'); ii=ii+1;
-% subplot(1,NP,ii); hold on; title('Elastic'); xlabel('m / dt')
-% 
-% %%
-% 
-% 
-%     % Plot profiles sometimes
-%     if ~mod(cc,nt)
-%         figure(3); ii=1;
-%             [~,jw] = min(abs(z-hw));
-%             subplot(1,NP,1); plot(Mr,z,Mr(jw),hw,'*k'); title(sprintf('Moulin radius at t=%1.1f days',t/3600/24)); ii=ii+1;
-%             subplot(1,NP,ii); plot(dC,z,dC(jw),hw,'*k'); ii=ii+1;
-% %             subplot(1,NP,ii); plot(dF,z,dF(jw),hw,'*k'); ii=ii+1;
-%             subplot(1,NP,ii); plot(dM,z,dM(jw),hw,'*k'); ii=ii+1;
-% %             subplot(1,NP,ii); plot(dP,z,dP(jw),hw,'*k'); ii=ii+1;
-%             subplot(1,NP,ii); plot(dE,z,dE(jw),hw,'*k');
-%     end
-%     
-% 
-% %%
-% 
-% 
-% 
-% 
 % figure(30); clf; 
-% 
 % h1 = subplot(4,5,1:4);
 % plot(time.t/sec,time.Mrmm); legend('min Mr','max Mr')
 % ylabel('(m)')
@@ -267,9 +244,9 @@ end
 % 
 % h3 = subplot(4,5,11:14);
 % plot(time.t/sec,Qin*dt,time.t/sec,Qout*dt);%,time.t/sec,time.V)
-% title(sprintf('Volume entering and leaving per dt (Q_{in,out}*dt), %1.2f day lag',ndaylag))
+% title(sprintf('Volume entering and leaving per dt (Q$_{in,out}$*dt), %1.2f day lag',ndaylag))
 % ylabel('(m$^3$)')
-% legend('Q_{in}*dt','Q_{out} *dt')%,'V in moulin')
+% legend('Q$_{in}$ *dt','Q$_{out}$ *dt')%,'V in moulin')
 % %xlabel('Time (yrs)')
 % 
 % h4 = subplot(4,5,16:19);
@@ -297,30 +274,3 @@ end
 % ylabel('z (m)')
 % set(gca,'yaxislocation','right')
 % title('Final geometry')
-% 
-% %%
-% 
-% 
-% colors = brewermap(length(Qin), 'spectral');
-% 
-% figure
-% subplot(1,2,1)
-% addToolbarExplorationButtons(gcf)
-% hold on; box on; grid on 
-% for ii = 1:10:length(Qin)
-% plot( Mr_out(:,ii), (z), 'color', colors(ii,:))
-% end
-% 
-% subplot(1,2,2)
-% hold on; box on; grid on 
-% for ii = 1:10:length(Qin)
-% plot( u(:,ii), (z), 'color', colors(ii,:))
-% end
-% 
-% figure
-% hold on
-% plot(time.t, hw_out)
-% 
-% axis([time.t(1), time.t(24*5), 0 500])
-% %%
-

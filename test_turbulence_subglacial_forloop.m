@@ -46,8 +46,7 @@ u = linspace(ubottom,utop,nz)';
 u0 = ubottom; z0 = 0;
 L = 15e3; % length scale over which to take hydraulic gradient
 
-%% create a non cylinderical initial radius
- initrad = (z+(H/0.5)) ./ (H/1);
+
  
 %%
 
