@@ -7,14 +7,27 @@
 % 6. xz-shear deformation?
 %
 %
+
 clear variables
-close all
+%close all
+
+warning('off', 'MATLAB:illConditionedMatrix') %This warning off is not idea, but I havent figured out how to fix a problem with ode15s...
+% - essentially when the water level is at or above the ice thickness,
+% the initial conditions matrix becomes singlar/badly scaled - I *think*
+% that this is okay in our circumstance (i.e. ode15s wants the hw to be
+% greater than H, but it only converges at H, thought I am not totally sure
+% on this) 
+% The actual warning:
+%Warning: Matrix is singular, close to singular or badly scaled. Results may be inaccurate. RCOND = NaN. 
+%> In ode15s (line 589)
+%  In subglacialsc (line 47)
+%  In moulingeom (line 163)
 %% define som basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 5;             %set the number of days for the model run
+numofdays = 3;             %set the number of days for the model run
 H         = 500;            % ice thickness, meters
-R0        = 3;              % radius of moulin initially
+R0        = 5;              % radius of moulin initially
 L         = 25e3;           % Length of the subglacial channel
 
 chebx     = 0;              % chebx=1 is not working yet
@@ -30,7 +43,7 @@ z         = (0:dz:H)';
 
 %% set the duration of the model run
 sec       = 86400*numofdays;   %seconds * days
-dt        = 900;        % Timestep, seconds (15 minutes)
+dt        = 300;        % Timestep, seconds (30 minutes)
 tmax      = sec;        % seconds (5 years here)
 time.t    = dt:dt:tmax; % seconds
 
@@ -67,7 +80,7 @@ T(:,1)  = C.T0;   % Melting point at the moulin wall
 
 %hw      = zeros(1,length(time.t));
 hwint   = H ; %set the inital water level as 
-hw(1)   = hwint;
+%hw(1)   = hwint;
 Mrmin   = 1e-9;  % 1 mm
 Mr(:,1) = R0*ones(size(z));
 
@@ -127,8 +140,10 @@ dP = zeros(size(z));
 
 %% Step through time
 cc = 0;
-
-for t = time.t(1)
+hw(1) = 500-300;
+S(1) = 3;
+for t = time.t
+    
     cc = cc+1;
     % Consider using the previous moulin radius in all calculations in each
     % timestep, so that the final result is not dependent on the order in
@@ -145,18 +160,24 @@ for t = time.t(1)
    
 %%%%%%%%%%
 %Water level and subglacial conditions
-    
-    tspan = [t,t+dt];
-    if cc == 1
-        y0=[hw, 0.5];
-    elseif cc > 1
-        y0 = [hw, S];
-    end
+%Dont let the water level go over the top of the ice    
+%     if hw > H
+%         time.excess(cc) = 
+%         hw = H;   
+%     elseif hw <= H
+%         hw = hw;     
+%     end
 
-    [hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0);
+    tspan = [t,t+dt];
+    y0 = [hw, S];
+    %[hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0);
+    opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
+    [hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0, opt);
+    
     time.S(cc)    = S;
     time.hw(cc)   = hw;
     time.Qout(cc) = Qout;
+    
     
 % % % % %     if tmp > limit
 % % % % %         break

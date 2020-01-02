@@ -1,6 +1,6 @@
 %function [t,hw,S,Qout] = subglacialsc(Mr,z,Qin,H,dx,C,tspan,y0) %for
 %TestSubglacial.m
-function [hw,S,Qout] = subglacialsc(Mr,z,Qin,H,dx,C,tspan,y0)
+function [hw,S,Qout] = subglacialsc(Mr,z,Qin,H,dx,C,tspan,y0, opt)
 % import constants
 %C = makeConstants;
 
@@ -36,8 +36,16 @@ be the equivalent in matlab.
 
 %}
 
-[t,y] = ode45(@(t,y) subglacial_odefcn(t,y,Mr,z,Qin,H,dx,C), tspan, y0);
-    
+%[t,y] = ode45(@(t,y) subglacial_odefcn(t,y,Mr,z,Qin,H,dx,C), tspan, y0);
+
+%Using ode15s deals with the equation stiffness problem
+
+%y0(1) = y0(1)-10; %This is to deal with issues when the water level is set to the ice height. Essentially, if the initial guess is very close to the answer there some..
+%funky issues that arise. The error will be: Warning: Matrix is singular, close to singular or badly scaled. Results may be inaccurate. RCOND = NaN. 
+%To overcome this and not significantly impact the solution time, I just subtract 1 meter from the water level. This seems to fix all the issues. 
+
+[t,y] = ode15s(@(t,y) subglacial_odefcn(t,y,Mr,z,Qin,H,dx,C), tspan, y0, opt); %testing to see if a stiff solver will deal with the timesteping issues
+
 hw = y(end,1); % moulin head (m)
 S = y(end,2); % channel cross-section area
 Qout = C.c3 .* S.^(5/4) .* sqrt( C.rhow*C.g*hw/dx); % discharge out the channel
