@@ -11,7 +11,8 @@
 clear variables
 %close all
 
-warning('off', 'MATLAB:illConditionedMatrix') %This warning off is not idea, but I havent figured out how to fix a problem with ode15s...
+warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal, 
+%but I havent figured out how to fix a problem with ode15s (couldnt find a solution for ode45, which just returned NaNs)
 % - essentially when the water level is at or above the ice thickness,
 % the initial conditions matrix becomes singlar/badly scaled - I *think*
 % that this is okay in our circumstance (i.e. ode15s wants the hw to be
@@ -22,10 +23,19 @@ warning('off', 'MATLAB:illConditionedMatrix') %This warning off is not idea, but
 %> In ode15s (line 589)
 %  In subglacialsc (line 47)
 %  In moulingeom (line 163)
+
+
+
+% Do you want to plot using lauren's plotting functions?
+plot_using_lauren =  true;
+
+% Do you want to save the 'time' structure?
+save_time = false; 
+savelocation = '/Users/lcandre2/Documents/Projects/moulin_formation/modeloutputs';
 %% define som basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 3;             %set the number of days for the model run
+numofdays = 10;             %set the number of days for the model run
 H         = 500;            % ice thickness, meters
 R0        = 5;              % radius of moulin initially
 L         = 25e3;           % Length of the subglacial channel
@@ -40,13 +50,14 @@ HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if
 %% set the vertical model components
 dz        = 1; %  vertical spacing, meters
 z         = (0:dz:H)';
-
+time.z    = z; %save the z profile in time
 %% set the duration of the model run
 sec       = 86400*numofdays;   %seconds * days
 dt        = 300;        % Timestep, seconds (30 minutes)
 tmax      = sec;        % seconds (5 years here)
 time.t    = dt:dt:tmax; % seconds
-
+time.dt   = dt;
+time.sec  = sec;
 %% set Qin 
 % Construct an approximate Qin for each timestep, based on air temps:
 % Qin = double(Tair>C.To) .* (Tair-C.To)*const;
@@ -57,8 +68,8 @@ Qcos2   = Qcos2(1:end,:) ;
 %change Qcos2 column for different types: 1. cosine, 2. cosine with small
 %melt event, 3. cosine with large melt event, 4. quasi-real data
 Qin     = interp1(Qcos2(:,1), Qcos2(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-Qin     = Qin*0.8 +3; %scale Qin to deal with a few model issues
-
+Qin     = Qin*0.5 +4; %scale Qin to deal with a few model issues
+time.Qin = Qin;  %save for future plotting
 
 % figure
 % hold on
@@ -75,7 +86,7 @@ xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
         = setupx(dt,chebx,xmax);
 T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1)  = C.T0;   % Melting point at the moulin wall
-
+time.icetemp = Tz; %just save in the time file for reference
 %% define initial moulin characteristics
 
 %hw      = zeros(1,length(time.t));
@@ -113,29 +124,37 @@ sigx = -50e3;%100e3;
 sigy = -50e3;%-100e3;
 tauxy = 100e3;%100e3;
 
+
+%% save general parameters in time file 
+time.parameters.sigxytauxy = [sigx, sigy, tauxy];
+time.parameters.relative_roughness = relative_roughness;
+time.parameters.creepenhancement = E;
+time.parameters.H = H;
+time.parameters.L =L;
+time.parameters.R0 = R0;
 %% Set up initial figure
 
-figure(3); clf;
-NP = 4; ii=1;
-subplot(1,NP,1); hold on; title('Moulin radius'); xlabel('meters'); ii=ii+1;
-subplot(1,NP,ii); hold on; title('Creep'); xlabel('m / dt'); ii=ii+1;
-% subplot(1,NP,ii); hold on; title('Refreezing'); xlabel('m / dt'); ii=ii+1;
-subplot(1,NP,ii); hold on; title('Turbulent melt'); xlabel('m /dt'); ii=ii+1;
-% subplot(1,NP,ii); hold on; title('Potential energy melt-out'); xlabel('m /dt'); ii=ii+1;
-subplot(1,NP,ii); hold on; title('Elastic'); xlabel('m / dt')
-%
-% Record minimum and maximum moulin diameter
-time.Mrmm = zeros(2,numel(time.t));
-time.V    = zeros(size(time.t));
-time.hw   = zeros(size(time.t));
-time.Vcapacity = zeros(size(time.t));
-time.Vfrz = zeros(size(time.t));
-time.Vturb = zeros(size(time.t));
-dF = zeros(size(z));
-dE = zeros(size(z));
-dC = zeros(size(z));
-dM = zeros(size(z));
-dP = zeros(size(z));
+% figure(3); clf;
+% NP = 4; ii=1;
+% subplot(1,NP,1); hold on; title('Moulin radius'); xlabel('meters'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Creep'); xlabel('m / dt'); ii=ii+1;
+% % subplot(1,NP,ii); hold on; title('Refreezing'); xlabel('m / dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Turbulent melt'); xlabel('m /dt'); ii=ii+1;
+% % subplot(1,NP,ii); hold on; title('Potential energy melt-out'); xlabel('m /dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Elastic'); xlabel('m / dt')
+% %
+% % Record minimum and maximum moulin diameter
+% time.Mrmm = zeros(2,numel(time.t));
+% time.V    = zeros(size(time.t));
+% time.hw   = zeros(size(time.t));
+% time.Vcapacity = zeros(size(time.t));
+% time.Vfrz = zeros(size(time.t));
+% time.Vturb = zeros(size(time.t));
+% dF = zeros(size(z));
+% dE = zeros(size(z));
+% dC = zeros(size(z));
+% dM = zeros(size(z));
+% dP = zeros(size(z));
 
 
 %% Step through time
@@ -172,7 +191,7 @@ for t = time.t
     y0 = [hw, S];
     %[hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0);
     opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
-    [hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0, opt);
+    [hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
     
     time.S(cc)    = S;
     time.hw(cc)   = hw;
@@ -228,7 +247,7 @@ for t = time.t
     time.dE(:,cc) = dE;
 
     % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC; % + dF + dM + dE + dP;
+    Mr = Mr + dC + dE + dM; % + dF + dM  + dP;
     %Mr = max(Mr,Mrmin);
         
     % Record the used moulin geometry 
@@ -238,19 +257,34 @@ for t = time.t
     time.Vcapacity(cc) = trapz(z,pi*Mr.^2);
     %
     % Plot profiles sometimes
-    if ~mod(cc,nt)
-        figure(3); ii=1;
-            [~,jw] = min(abs(z-hw));
-            subplot(1,NP,1); plot(Mr,z,Mr(jw),hw,'*k'); title(sprintf('Moulin radius at t=%1.1f days',t/3600/24)); ii=ii+1;
-            subplot(1,NP,ii); plot(dC,z,dC(jw),hw,'*k'); ii=ii+1;
-%             subplot(1,NP,ii); plot(dF,z,dF(jw),hw,'*k'); ii=ii+1;
-            subplot(1,NP,ii); plot(dM,z,dM(jw),hw,'*k'); ii=ii+1;
-%             subplot(1,NP,ii); plot(dP,z,dP(jw),hw,'*k'); ii=ii+1;
-            subplot(1,NP,ii); plot(dE,z,dE(jw),hw,'*k');
-    end
+%     if ~mod(cc,nt)
+%         figure(3); ii=1;
+%             [~,jw] = min(abs(z-hw));
+%             subplot(1,NP,1); plot(Mr,z,Mr(jw),hw,'*k'); title(sprintf('Moulin radius at t=%1.1f days',t/3600/24)); ii=ii+1;
+%             subplot(1,NP,ii); plot(dC,z,dC(jw),hw,'*k'); ii=ii+1;
+% %             subplot(1,NP,ii); plot(dF,z,dF(jw),hw,'*k'); ii=ii+1;
+%             subplot(1,NP,ii); plot(dM,z,dM(jw),hw,'*k'); ii=ii+1;
+% %             subplot(1,NP,ii); plot(dP,z,dP(jw),hw,'*k'); ii=ii+1;
+%             subplot(1,NP,ii); plot(dE,z,dE(jw),hw,'*k');
+%     end
     %
 end
-%%
+%% figures
+
+if plot_using_lauren
+    laurensplots(time)
+end
+
+if save_time
+  cd(savelocation)
+  tmp = datestr(now,'mm-dd-yyyy');
+  cd(tmp);
+  mkdir(tmp);
+  filename = ['modelrun', '_R0-', num2str(R0), '_H-', num2str(H), '_', num2str(numofdays), 'd_',  datestr(now,'mm-dd-yyyy_HHMM'), '.mat']
+  save(filename, 'time')
+end 
+
+
 % figure(30); clf; 
 % h1 = subplot(4,5,1:4);
 % plot(time.t/sec,time.Mrmm); legend('min Mr','max Mr')
