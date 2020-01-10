@@ -9,7 +9,7 @@
 %
 
 clear variables
-%close all
+close all
 
 warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal, 
 %but I havent figured out how to fix a problem with ode15s (couldnt find a solution for ode45, which just returned NaNs)
@@ -26,25 +26,35 @@ warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal,
 
 
 
-% Do you want to plot using lauren's plotting functions?
+% Do you want to plot using lauren's plotting function?
 plot_using_lauren =  true;
+save_figures      =  false;
+visible_figures   =  true;
 
-% Do you want to save the 'time' structure?
-save_time = false; 
-savelocation = '/Users/lcandre2/Documents/Projects/moulin_formation/modeloutputs';
+% Do you want to save the 'time' structure? This has (almost) everything
+% documented...
+save_timevariable =  false; 
+
+save_location = '/Users/lcandre2/Documents/Projects/moulin_formation/modeloutputs';
+datetime = datestr(now,'mm-dd-yyyy_HHMM'); %This will assign a unique date and time for both the figures and the model outputs
 %% define som basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
 numofdays = 10;             %set the number of days for the model run
 H         = 500;            % ice thickness, meters
-R0        = 5;              % radius of moulin initially
-L         = 25e3;           % Length of the subglacial channel
+R0        = 3;              % radius of moulin initially
+L         = 12e3;           % Length of the subglacial channel
+
+%inital guesses for subglacial model
+hw(1) = H;                  % moulin water level (m)
+S(1)  = R0;                 % subglacial channel cross sectional area (m^2)
+
 
 chebx     = 0;              % chebx=1 is not working yet
 nt        = 1000;           % plot every nt timesteps
 artesian  = 1;              % allow moulin to shed water?
 Qscale    = 1;              % factor to scale FOXX runoff by
-E         = 5;              % enhancement factor for creep
+E         = 10;              % enhancement factor for creep
 
 HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
 %% set the vertical model components
@@ -96,12 +106,12 @@ Mrmin   = 1e-9;  % 1 mm
 Mr(:,1) = R0*ones(size(z));
 
 %create a non cylinderical initial radius
-% initrad = (z+(H/0.5)) ./ (H/1);
-% Mr(:,1) = initrad; %To use this, the moulin should be filled 
+initrad = (z+(H/0.5)) ./ (H/1);
+Mr(:,1) = initrad; %To use this, the moulin should be filled 
 
 %% Set turbulence parameters
 
-relative_roughness = 0.1; %increasing this value increases the amount of melting due to turbulence.
+relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence.
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
 %the calculated change in moulin radius. If false, it makes the implicit
@@ -132,6 +142,7 @@ time.parameters.creepenhancement = E;
 time.parameters.H = H;
 time.parameters.L =L;
 time.parameters.R0 = R0;
+time.parameters.numofdays =  numofdays;
 %% Set up initial figure
 
 % figure(3); clf;
@@ -159,8 +170,7 @@ time.parameters.R0 = R0;
 
 %% Step through time
 cc = 0;
-hw(1) = 500-300;
-S(1) = 3;
+
 for t = time.t
     
     cc = cc+1;
@@ -272,15 +282,18 @@ end
 %% figures
 
 if plot_using_lauren
-    laurensplots(time)
+    laurensplots(time, save_figures, save_location, datetime, visible_figures)
 end
 
-if save_time
-  cd(savelocation)
+
+
+
+if save_timevariable
+  cd(save_location)
   tmp = datestr(now,'mm-dd-yyyy');
-  cd(tmp);
   mkdir(tmp);
-  filename = ['modelrun', '_R0-', num2str(R0), '_H-', num2str(H), '_', num2str(numofdays), 'd_',  datestr(now,'mm-dd-yyyy_HHMM'), '.mat']
+  cd(tmp);
+  filename = ['modelrun', '_R0-', num2str(R0), '_H-', num2str(H), '_', num2str(numofdays), 'd_',  datetime, '_outputs.mat']
   save(filename, 'time')
 end 
 

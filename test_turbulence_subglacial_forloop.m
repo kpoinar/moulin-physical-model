@@ -87,8 +87,9 @@ hw      = zeros(1,length(time.t));
 hwint   = H;
 hw(1)   = hwint;
 R0      = 2.5;  % radius of moulin initially
-%Mr(:,1) = R0*ones(size(z));
-Mr(:,1) = initrad; %To use this, the moulin should be filled 
+Mr(:,1) = R0*ones(size(z));
+%initrad = R0
+%Mr(:,1) = initrad; %To use this, the moulin should be filled 
 MoulinSysVol(:,1) ...
         = pi .* Mr(:,1).^2;
 
@@ -312,5 +313,5 @@ title('Elastic')
 
 
 %%
-figure; 
-set(gcf, 'position', [ 1006         349        2093         981])
+% figure; 
+% set(gcf, 'position', [ 1006         349        2093         981])
