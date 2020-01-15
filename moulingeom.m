@@ -9,7 +9,7 @@
 %
 
 clear variables
-close all
+%close all
 
 warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal, 
 %but I havent figured out how to fix a problem with ode15s (couldnt find a solution for ode45, which just returned NaNs)
@@ -40,7 +40,7 @@ datetime = datestr(now,'mm-dd-yyyy_HHMM'); %This will assign a unique date and t
 %% define som basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 10;             %set the number of days for the model run
+numofdays = 30;             %set the number of days for the model run
 H         = 500;            % ice thickness, meters
 R0        = 3;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
@@ -63,7 +63,7 @@ z         = (0:dz:H)';
 time.z    = z; %save the z profile in time
 %% set the duration of the model run
 sec       = 86400*numofdays;   %seconds * days
-dt        = 300;        % Timestep, seconds (30 minutes)
+dt        = 300;        % Timestep, seconds 
 tmax      = sec;        % seconds (5 years here)
 time.t    = dt:dt:tmax; % seconds
 time.dt   = dt;
@@ -111,7 +111,7 @@ Mr(:,1) = initrad; %To use this, the moulin should be filled
 
 %% Set turbulence parameters
 
-relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence.
+relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence. Lauren has found that 0.1-0.2 work fine, anything else might be physically unrealistic
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
 %the calculated change in moulin radius. If false, it makes the implicit
@@ -143,6 +143,7 @@ time.parameters.H = H;
 time.parameters.L =L;
 time.parameters.R0 = R0;
 time.parameters.numofdays =  numofdays;
+time.parameters.constants = C;
 %% Set up initial figure
 
 % figure(3); clf;
@@ -200,6 +201,7 @@ for t = time.t
     tspan = [t,t+dt];
     y0 = [hw, S];
     %[hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0);
+    % need to add Vadd to the Qin to keep water balance
     opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
     [hw,S,Qout]   = subglacialsc(Mrprev,z,Qin(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
     
@@ -284,8 +286,6 @@ end
 if plot_using_lauren
     laurensplots(time, save_figures, save_location, datetime, visible_figures)
 end
-
-
 
 
 if save_timevariable

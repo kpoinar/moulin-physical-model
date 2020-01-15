@@ -32,12 +32,13 @@ end
 plot(time.Mr(:,1) ,(time.z), 'linewidth', 3, 'color', 'k')
 
 plot(time.Mr(:,end) ,(time.z), 'linewidth', 3, 'color', 'k')
-
+plot( [0, time.parameters.R0], [time.parameters.H.*0.91, time.parameters.H.*0.91], '--k','linewidth', 1)
 b = subtightplot(1,4,2);
 hold on 
 set(gca,'Yticklabel',[]) 
 xlabel('dRadius (m d^{-1})')
 title('Turbulent Melting')
+
 for jj = 1:1:length(timewindow) % plot every 12 hours for the full model run
 plot( time.dM(:,(43200/time.dt).*jj) .* (86400/time.dt) ,(time.z), 'linewidth', 1, 'color', reds(jj,:) )
 
