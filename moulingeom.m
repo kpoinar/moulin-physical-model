@@ -111,8 +111,13 @@ initrad = (z+(H/0.5)) ./ (H/1);
 M.r(:,1) = initrad; %To use this, the moulin should be filled 
 
 % initalize the horizontal coordinate system
-M.xu = zeros(length(z),1);
-M.xd = zeros(length(z),1) + M.r.*2;
+M.xu = -M.r;
+M.xd = M.r;
+% Pin the bed of the upstream wall to x=0 while retaining the initial
+% moulin shape / radius:
+x0 = M.xu(1);
+M.xu = M.xu - x0;
+M.xd = M.xd - x0;
 %% Set turbulence parameters
 
 relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence.
@@ -274,7 +279,13 @@ for t = time.t
     % Calculate the horizontal position of the moulin within the ice column
     M.xu = M.xu - dC - dE - dM - dP; % - dOC - dG;
     M.xd = M.xd + dC + dE + dM + dP; % +dG;
-    
+    %
+    % Shift them both back upstream so that the bed of the upstream wall
+    % stays pinned at x = 0:
+    x0 = M.xu(1);
+    M.xu = M.xu - x0;
+    M.xd = M.xd - x0;
+    %
     % Now use the moulin positions to calculate the actual radius:
     M.r = (M.xd - M.xu) / 2;
     %M.r = M.r + dC + dE + dM + dP; % + dF + dM  + dP;
