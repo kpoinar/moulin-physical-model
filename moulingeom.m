@@ -44,6 +44,7 @@ numofdays = 10;             %set the number of days for the model run
 H         = 500;            % ice thickness, meters
 R0        = 3;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
+f         = 0.5;            % fraction of the potential energy used to open the top of the moulin (above water level)
 
 %inital guesses for subglacial model
 hw(1) = H;                  % moulin water level (m)
@@ -103,12 +104,15 @@ time.icetemp = Tz; %just save in the time file for reference
 hwint   = H ; %set the inital water level as 
 %hw(1)   = hwint;
 Mrmin   = 1e-9;  % 1 mm
-Mr(:,1) = R0*ones(size(z));
+M.r(:,1) = R0*ones(size(z));
 
 %create a non cylinderical initial radius
 initrad = (z+(H/0.5)) ./ (H/1);
-Mr(:,1) = initrad; %To use this, the moulin should be filled 
+M.r(:,1) = initrad; %To use this, the moulin should be filled 
 
+% initalize the horizontal coordinate system
+M.xu = zeros(length(z),1);
+M.xd = zeros(length(z),1) + M.r.*2;
 %% Set turbulence parameters
 
 relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence.
@@ -143,6 +147,7 @@ time.parameters.H = H;
 time.parameters.L =L;
 time.parameters.R0 = R0;
 time.parameters.numofdays =  numofdays;
+time.parameters.f = f;
 %% Set up initial figure
 
 % figure(3); clf;
@@ -177,13 +182,13 @@ for t = time.t
     % Consider using the previous moulin radius in all calculations in each
     % timestep, so that the final result is not dependent on the order in
     % which I do creep, refreeze, turbulent melt, elastic, etc.
-    Mrprev = Mr;
+    Mrprev = M.r;
     
     % Check if today is the day that we hydrofracture and reopen the bottom
     % of the moulin:
     if ~mod(HFdoy*86400 - t,sec)
         fprintf('Hydrofracture event! at t=%1.2f years (cc=%d)\n',t/sec,cc)
-        Mr = max(Mr,R0);
+        M.r = max(M.r,R0);
     end
     %
    
@@ -258,7 +263,7 @@ for t = time.t
 
 %%%%%%%%% dP: Expansion from gravitational potential energy above the water
 %%%%%%%%% line
-    dP = potentialdrop(Qin(cc),z,hw,Mr,dt,C);
+    dP = potentialdrop(Qin(cc),z,hw,Mrprev,dt,C,f);
     % The reason for calculating the above is to offset the elastic closure
     % at the top of the moulin.  On its own, the moulin will close
     % elastically after some days to months (depending on C.E).  We know
@@ -266,15 +271,22 @@ for t = time.t
     % melting above the water line.
     time.dP(:,cc) = dP;
         
-    % Now actually sum all the contributions to moulin size:
-    Mr = Mr + dC + dE + dM + dP; % + dF + dM  + dP;
-    %Mr = max(Mr,Mrmin);
+    % Calculate the horizontal position of the moulin within the ice column
+    M.xu = M.xu - dC - dE - dM - dP; % - dOC - dG;
+    M.xd = M.xd + dC + dE + dM + dP; % +dG;
+    
+    % Now use the moulin positions to calculate the actual radius:
+    M.r = (M.xd - M.xu) / 2;
+    %M.r = M.r + dC + dE + dM + dP; % + dF + dM  + dP;
+    %M.r = max(M.r,M.rmin);
         
     % Record the used moulin geometry 
-    time.Mr(:,cc) = Mr;
+    time.M.r(:,cc) = M.r;
+    time.M.xu(:,cc) = M.xu;
+    time.M.xd(:,cc) = M.xd;
     %
     % Record volume capacity of moulin
-    time.Vcapacity(cc) = trapz(z,pi*Mr.^2);
+    time.Vcapacity(cc) = trapz(z,pi*M.r.^2);
     %
     % Plot profiles sometimes
 %     if ~mod(cc,nt)
