@@ -14,7 +14,8 @@ function dP = potentialdrop(Qin,z,hw,Mr,dt,C)
 % For now, try a fraction of energy transfer f:
 % f ~ 1/r
 %
-f = 1./Mr;
+f = 1;%./Mr;
+%
 dP = C.rhow / C.rhoi *C.g / C.Lf * Qin*dt ./ (2*pi*Mr);
 dP = dP .* f;
 %
