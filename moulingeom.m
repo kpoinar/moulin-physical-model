@@ -45,6 +45,8 @@ H         = 500;            % ice thickness, meters
 R0        = 3;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
 f         = 0.5;            % fraction of the potential energy used to open the top of the moulin (above water level)
+alpha     = 0.03;            % regional surface slope (unitless), for use in Glen's Flow Law
+n         = 3;              % flow law exponent (Glen's Flow Law)
 
 %inital guesses for subglacial model
 hw(1) = H;                  % moulin water level (m)
@@ -55,7 +57,7 @@ chebx     = 0;              % chebx=1 is not working yet
 nt        = 1000;           % plot every nt timesteps
 artesian  = 1;              % allow moulin to shed water?
 Qscale    = 1;              % factor to scale FOXX runoff by
-E         = 10;              % enhancement factor for creep
+E         = 10;             % enhancement factor for creep
 
 HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
 %% set the vertical model components
@@ -143,6 +145,9 @@ sigx = -50e3;%100e3;
 sigy = -50e3;%-100e3;
 tauxy = 100e3;%100e3;
 
+%% Glen's flow law
+% Assign ice deformation A(T)
+A = AofT(Tz - C.T0);
 
 %% save general parameters in time file 
 time.parameters.sigxytauxy = [sigx, sigy, tauxy];
@@ -276,9 +281,20 @@ for t = time.t
     % melting above the water line.
     time.dP(:,cc) = dP;
         
+    
+%%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
+    dG = deformGlen(H, alpha, A, z, n, dt, C);
+    time.dG(:,cc) = dG;
+    
+    
+    
     % Calculate the horizontal position of the moulin within the ice column
-    M.xu = M.xu - dC - dE - dM - dP; % - dOC - dG;
-    M.xd = M.xd + dC + dE + dM + dP; % +dG;
+    M.xu = M.xu - dC - dE - dM - dP + dG; % - dOC;
+                                % Important Note: the +dG above is correct.
+                                % The upstream wall moves downstream.
+    M.xd = M.xd + dC + dE + dM + dP + dG;
+                                % The downstream wall also moves downstream
+                                % at the same rate, dG.
     %
     % Shift them both back upstream so that the bed of the upstream wall
     % stays pinned at x = 0:
