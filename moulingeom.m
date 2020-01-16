@@ -192,7 +192,8 @@ for t = time.t
     % Consider using the previous moulin radius in all calculations in each
     % timestep, so that the final result is not dependent on the order in
     % which I do creep, refreeze, turbulent melt, elastic, etc.
-    Mrprev = M.r;
+    Mrprev  = M.r;
+    Mxuprev = M.xu;
     
     % Check if today is the day that we hydrofracture and reopen the bottom
     % of the moulin:
@@ -286,7 +287,11 @@ for t = time.t
     dG = deformGlen(H, alpha, A, z, n, dt, C);
     time.dG(:,cc) = dG;
     
-    
+%%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
+   [dOC, uw_oc, Voc] = turbulence(hw, Qin, Mrprev, Mxuprev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature, dz);
+   time.dOC(:,cc)  =  dM;
+   time.uw_oc(:,cc)  =  uw;
+   time.Voc(cc)  = Vadd;    
     
     % Calculate the horizontal position of the moulin within the ice column
     M.xu = M.xu - dC - dE - dM - dP + dG; % - dOC;
