@@ -44,8 +44,8 @@ numofdays = 10;             %set the number of days for the model run
 H         = 500;            % ice thickness, meters
 R0        = 3;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
-f         = 0.001;            % fraction of the potential energy used to open the top of the moulin (above water level)
-alpha     = 0.03;            % regional surface slope (unitless), for use in Glen's Flow Law
+f         = 0.5;            % fraction of the potential energy used to open the top of the moulin (above water level)
+alpha     = 0.03;           % regional surface slope (unitless), for use in Glen's Flow Law
 n         = 3;              % flow law exponent (Glen's Flow Law)
 
 %inital guesses for subglacial model
