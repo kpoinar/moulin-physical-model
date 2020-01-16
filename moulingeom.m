@@ -199,6 +199,9 @@ for t = time.t
     Mrminor_prev  = M.r_minor;
     Mrmajor_prev  = M.r_major;
     Mxuprev = M.xu;
+    
+    % which nodes are underwater or at the water line (wet) versus above the water line?
+    wet = locatewater(hw,z);
    
 %%%%%%%%%%
 %Water level and subglacial conditions
