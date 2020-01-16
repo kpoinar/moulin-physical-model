@@ -23,15 +23,15 @@ hold on
 title('Moulin radius')
 ylabel('Ice thickness')
 xlabel('Radius (m)')
-axis([0 time.parameters.R0 0 time.parameters.H])
+%axis([0 time.parameters.R0 0 time.parameters.H])
 for jj = 1:1:length(timewindow) % plot every 12 hours for the full model run
-plot( time.M.r(:,(43200/time.dt).*jj) ,(time.z), 'linewidth', 1, 'color', spect(jj,:) )
+plot( time.M.r_minor(:,(43200/time.dt).*jj) ,(time.z), 'linewidth', 1, 'color', spect(jj,:) )
 plot(zeros(length(timewindow),1) ,    time.hw(:,(43200/time.dt).*jj), 'o', 'markerfacecolor', spect(jj,:), 'markeredgecolor', 'k', 'markersize', 12)
 
 end
-plot(time.M.r(:,1) ,(time.z), 'linewidth', 3, 'color', 'k')
+plot(time.M.r_minor(:,1) ,(time.z), 'linewidth', 3, 'color', 'k')
 
-plot(time.M.r(:,end) ,(time.z), 'linewidth', 3, 'color', 'k')
+plot(time.M.r_minor(:,end) ,(time.z), 'linewidth', 3, 'color', 'k')
 plot( [0, time.parameters.R0], [time.parameters.H.*0.91, time.parameters.H.*0.91], '--k','linewidth', 1)
 b = subtightplot(1,4,2);
 hold on 

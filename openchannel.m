@@ -1,4 +1,4 @@
-function [dOC, uw_oc, Voc] =openchannel(hw, Qin, Mr, Mxu, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature,dz)
+function [dOC, Qoc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature)
 
 
 % so the hydrualic radius will be calculated as the perimeter of 1/2 an
@@ -44,53 +44,27 @@ ks = relative_roughness;
  %This is the change in the vertical
 
 
-% calculate the length overwhich the water is experiencing headloss
-dX = diff(Mxu);
-dX(end+1) =  dX(end);
-
-%short length 
-%dL = dX;
-
-%long length;
-dL = sqrt(dz.^2 + dX.^2);
-
+%%%%%%%%%%%%%% zero the values of water below the water line
 waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
 waterpresent(waterpresent>=0) =0; %water is present
 waterpresent(waterpresent<0) =1; %water is not present, so calculations need to be done.
 
+%%%%%%%%%%%%% calculate the length overwhich the water is experiencing headloss
+dL = diff(Mxu);
+dL(end+1) =  dL(end);
 
-S = (pi * Mr.^2) /2; % The cross-sectional area is 
-uw = Qin ./  S; %calculate the water velocity in each node 
-uw(waterpresent ==0) =0; % if there is water in the given cell we dont do this calculation
+%%%%%%%%%%%%% calculate the wetted perimeter, hydraulic diameter, and hydraulic radius 
+Mp = (pi.* (3 .* Mr_minor + 3 .* Mr_major - sqrt( (3 .* Mr_minor + Mr_major) .* (Mr_minor + 3 .* Mr_major)))) ./2; % moderate complexity ellipse circumfrence divided by 2
+area_ell = Mr_minor .* Mr_major .* pi /2; %area of 1/2 of an ellipse
 
-% ------------------------------
-% Keep uw to a max of 9.3 m/s, artificially for now, which is the terminal velocity.
-%It was getting really large (10^50 m/s!) for areas of the moulin with near-zero cross
-% section.
-if uw > 9.3
-    disp('big velocity !!!')
-    disp('assigning terminal velocity of 9.3ms-1')
-end
+Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
+Rh   = area_ell ./ Mp; % hydraulic radius
 
-uw = min(uw,9.3);
-% ------------------------------
+%%%%%%%%%%%%% The water temperature is assumed to be zero because it is not,
+% technically, under pressure of the water above it
+Tmw  =  0;   
 
-Mp   =  pi .* Mr; % wetted/melting perimeter
-Dh   = (2*(pi .* Mr.^2)) ./ Mp; %hydrualic diameter
-Rh   = (0.5*pi.* Mr.^2) ./ Mp; % hydraulic radius
-    % flag if the ks/dh ratio is less than 0.05
-    % if (ks/Dh) < 0.05
-    %     disp('ks/dh < 0.05')
-    %     disp('Should be using Colebrook-White')
-    % end
-
-% ------------------------------    
-% calculate the pressure melting temperature of ice/water %https://glaciers.gi.alaska.edu/sites/default/files/mccarthy/Notes_thermodyn_Aschwanden.pdf
-Pw   = C.rhow .* C.g .* waterpresent;
-Tmw  =  273.16 - 9.8e-8.*(Pw - 611.73);  
-
-
-% select the appropriate parameterization of DW friction factor
+%%%%%%%%%%%%%% select the appropriate parameterization of DW friction factor
 if Bathurst
     fR =10* 1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %#ok<UNRCH> %Bathurst parameterization for DW friction factor
 else
@@ -99,32 +73,31 @@ else
 end
 
 
+%%%%%%%%%%%%%% expected headloss based on the discharge
+%uw = (2.* dz .* Dh .* C.g)/ (fR .* dL) .^(1/3); 
+hL = (((Qin./area_ell).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
 
-
-% calculate head loss following Munson 2005
-hL  =  ((uw.^2) .* fR .* dL) ./(2 .* Dh .* C.g);
-
-
+%%%%%%%%%%%%% calculate the expected melt 
 if include_ice_temperature
-    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
-                ./ (2 .* pi .* Mr .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
-    %This tis modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
+    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ...
+                ./ (area_ell .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf));
+
+    %This is modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
     % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
     % include the surrounding ice temperature 
     
 else
-    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ./ (2 .* pi .* Mr .* C.rhoi .* C.Lf); %#ok<UNRCH>
+    dOC_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ./ (area_ell .* C.rhoi .* C.Lf); %#ok<UNRCH>
     % This parameterization is closer to that which is traditionally used
     % to calculate melting within a subglacial channel where the ice and
     % water are at the same temperature
 end
 
 % Make sure that there is no melting in places without water
-dM_dt(waterpresent == 0) = 0;
+dOC_dt(waterpresent == 0) = 0;
 
-dM  = dM_dt .* dt; %change in radius over the given time step
-
-Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater gained due to melting the surrounding ice
+dOC  = dOC_dt .* dt;%change in radius over the given time step
+Qoc = trapz(C.rhoi/C.rhow * (Mp .* dOC) ./dt,z); %volume of meltwater gained due to melting the surrounding ice
 
 
 
