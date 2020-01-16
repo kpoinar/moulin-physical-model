@@ -1,4 +1,4 @@
-function [dOC, Qoc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature)
+function [dOC, Qoc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature)
 
 
 % so the hydrualic radius will be calculated as the perimeter of 1/2 an
@@ -50,8 +50,13 @@ waterpresent(waterpresent>=0) =0; %water is present
 waterpresent(waterpresent<0) =1; %water is not present, so calculations need to be done.
 
 %%%%%%%%%%%%% calculate the length overwhich the water is experiencing headloss
-dL = diff(Mxu);
-dL(end+1) =  dL(end);
+ dL = diff(Mxu);
+ dL = [dL(1); dL];
+ dL(end) =  dL(end-1);
+ dL = sqrt(dL.^2 + dz.^2);
+
+     % Find out where dL is zero. We'll need to replace these indices.
+     repl = dL==0;
 
 %%%%%%%%%%%%% calculate the wetted perimeter, hydraulic diameter, and hydraulic radius 
 Mp = (pi.* (3 .* Mr_minor + 3 .* Mr_major - sqrt( (3 .* Mr_minor + Mr_major) .* (Mr_minor + 3 .* Mr_major)))) ./2; % moderate complexity ellipse circumfrence divided by 2
@@ -62,7 +67,7 @@ Rh   = area_ell ./ Mp; % hydraulic radius
 
 %%%%%%%%%%%%% The water temperature is assumed to be zero because it is not,
 % technically, under pressure of the water above it
-Tmw  =  0;   
+Tmw  =  273.15;   
 
 %%%%%%%%%%%%%% select the appropriate parameterization of DW friction factor
 if Bathurst
@@ -87,7 +92,7 @@ if include_ice_temperature
     % include the surrounding ice temperature 
     
 else
-    dOC_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ./ (area_ell .* C.rhoi .* C.Lf); %#ok<UNRCH>
+    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ./ (area_ell .* C.rhoi .* C.Lf); %#ok<UNRCH>
     % This parameterization is closer to that which is traditionally used
     % to calculate melting within a subglacial channel where the ice and
     % water are at the same temperature
@@ -97,10 +102,29 @@ end
 dOC_dt(waterpresent == 0) = 0;
 
 dOC  = dOC_dt .* dt;%change in radius over the given time step
+%
+%
+%
+% % Replace anywhere with dL=0 with the potential drop:
+% dP = 0.5 * C.rhow / C.rhoi *C.g / C.Lf * Qin*dt ./ (2*pi*Mr_major);
+% dOC(repl) = dP(repl);
+
+
+
+
+
+% fudgy debug yum
+% dOC = dOC * 0.01;
+
+
+
+
+
+
 Qoc = trapz(C.rhoi/C.rhow * (Mp .* dOC) ./dt,z); %volume of meltwater gained due to melting the surrounding ice
 
-
-
+% hL_L = hL./dL;
+% hL_L(waterpresent == 0) = 0;
 
 
 end

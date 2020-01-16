@@ -1,10 +1,10 @@
 % Solve for moulin geometry, considering
-% 1. elastic deformation (closure)
-% 2. creep deformation (closure)
+% 1. elastic deformation (opening / closure)
+% 2. creep deformation (opening / closure)
 % 3. refreezing (closure)
 % 4. turbulent melting (opening)
-% 5. ice lid?
-% 6. xz-shear deformation?
+% 5. open-channel melting (opening)
+% 6. xz-shear deformation
 %
 %
 
@@ -44,7 +44,7 @@ numofdays = 10;             %set the number of days for the model run
 H         = 500;            % ice thickness, meters
 R0        = 3;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
-f         = 0.5;            % fraction of the potential energy used to open the top of the moulin (above water level)
+f         = 0.001;            % fraction of the potential energy used to open the top of the moulin (above water level)
 alpha     = 0.03;            % regional surface slope (unitless), for use in Glen's Flow Law
 n         = 3;              % flow law exponent (Glen's Flow Law)
 
@@ -55,11 +55,11 @@ S(1)  = R0;                 % subglacial channel cross sectional area (m^2)
 
 chebx     = 0;              % chebx=1 is not working yet
 nt        = 1000;           % plot every nt timesteps
-artesian  = 1;              % allow moulin to shed water?
-Qscale    = 1;              % factor to scale FOXX runoff by
-E         = 10;             % enhancement factor for creep
+% artesian  = 1;              % allow moulin to shed water?
+% Qscale    = 1;              % factor to scale FOXX runoff by
+E         = 3;             % enhancement factor for creep
 
-HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
+% HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
 %% set the vertical model components
 dz        = 1; %  vertical spacing, meters
 z         = (0:dz:H)';
@@ -126,6 +126,7 @@ M.xd = M.xd - x0;
 %% Set turbulence parameters
 
 relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence.
+relative_roughness_OC = 0.002;
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
 %the calculated change in moulin radius. If false, it makes the implicit
@@ -198,14 +199,6 @@ for t = time.t
     Mrminor_prev  = M.r_minor;
     Mrmajor_prev  = M.r_major;
     Mxuprev = M.xu;
-    
-    % Check if today is the day that we hydrofracture and reopen the bottom
-    % of the moulin:
-    if ~mod(HFdoy*86400 - t,sec)
-        fprintf('Hydrofracture event! at t=%1.2f years (cc=%d)\n',t/sec,cc)
-        M.r = max(M.r,R0);
-    end
-    %
    
 %%%%%%%%%%
 %Water level and subglacial conditions
@@ -228,9 +221,6 @@ for t = time.t
     time.Qout(cc) = Qout;
     
     
-% % % % %     if tmp > limit
-% % % % %         break
-% % % % %     end
 %     % Moulin water volume:
 %     V = watervolume(V,Vturb,Vfrz,Qin(cc),Qout(cc),dt);
 %     % Make an artesian spring if V > Vmoulin
@@ -244,8 +234,10 @@ for t = time.t
 
 %%%%%%%%% dC: Creep deformation
 %Creep deformation: do this first because it is a larger term  
-    dC = creep(Mrminor_prev,z,H,hw,T,dt,E,C);
-    time.dC(:,cc) = dC;
+    dC_minor = creep(Mrminor_prev,z,H,hw,T,dt,E,C);
+    dC_major = creep(Mrmajor_prev,z,H,hw,T,dt,E,C);
+    time.dC_minor(:,cc) = dC_minor;    
+    time.dC_major(:,cc) = dC_major;
     
     
 %%%%%%%%% dF: Refreezing
@@ -258,23 +250,31 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-  [dM, uw, Vadd] = turbulence(hw, Qout, Mrminor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
-   time.dM(:,cc)  =  dM;
-   time.uw(:,cc)  =  uw;
-   time.Vadd(cc)  = Vadd;
+   [dM_minor, uw_minor, Vadd_minor] = turbulence(hw, Qout, Mrminor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
+   time.dM_minor(:,cc)  =  dM_minor;
+   time.uw_minor(:,cc)  =  uw_minor;
+   time.Vadd_minor(cc)  = Vadd_minor;
+   [dM_major, uw_major, Vadd_major] = turbulence(hw, Qout, Mrmajor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
+   time.dM_major(:,cc)  =  dM_major;
+   time.uw_major(:,cc)  =  uw_major;
+   time.Vadd_major(cc)  = Vadd_major;
 
 %%%%%%%%%   
     %deal with the Vadd term by adding it to the next Qin timestep so that
     %it is integrated 
-    if cc < length(time.t)
-        Qin(cc +1) = Qin(cc+1) + Vadd./dt;
-    end
+%     if cc < length(time.t)
+%         Qin(cc+1) = Qin(cc+1) + mean([Vadd_minor*ones(1,3) Vadd_major])./dt;
+%         % Our moulin has 3 semi-minor axes and 1 semi-major axis, so
+%         % average accordingly.
+%     end
     
 %%%%%%%%% dE: Elastic deformation   
 % Elastic deformation: do this last because it is a function of moulin 
   % radius.  Elastic deformation is small and sensitive to water pressure
-    dE = elastic(z,Mrminor_prev,hw,H,sigx,sigy,tauxy,C);
-    time.dE(:,cc) = dE;
+    dE_minor = elastic(z,Mrminor_prev,hw,H,sigx,sigy,tauxy,C);
+    time.dE_minor(:,cc) = dE_minor;
+    dE_major = elastic(z,Mrmajor_prev,hw,H,sigx,sigy,tauxy,C);
+    time.dE_major(:,cc) = dE_major;
 
 %%%%%%%%% dP: Expansion from gravitational potential energy above the water
 %%%%%%%%% line
@@ -292,19 +292,29 @@ for t = time.t
     time.dG(:,cc) = dG;
     
 %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-   [dOC, Qoc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
+   [dOC, Qoc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature);
+   
+   
+   
+   
+   
+   dOC = 0 * dOC / 2;
+   
+   
+   
+   
    time.dOC(:,cc)  =  dOC;
-   time.Qoc(cc)    =  Qoc;    
+   time.Qoc(cc)    =  Qoc;
     
     % Calculate the horizontal position of the moulin within the ice column
-    M.xu = M.xu - dC - dE - dM + dG - dP;% - dOC/2; % - dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
+    M.xu = M.xu - dC_major - dE_major - dM_major + dG - dP;% dOC; % - dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
                                 % Important Note: the +dG above is correct.
                                 % The upstream wall moves downstream.
                                 
-    M.xd = M.xd + dC + dE + dM + dG + dP; % + dP;
+    M.xd = M.xd + dC_minor + dE_minor + dM_minor + dG;% + dP;
                                 % The downstream wall also moves downstream
                                 % at the same rate, dG.
-    M.xd= max(M.xd, M.xu);
+    %M.xd= max(M.xd, M.xu);
     % Shift them both back upstream so that the bed of the upstream wall
     % stays pinned at x = 0:
     x0 = M.xu(1);
@@ -312,7 +322,7 @@ for t = time.t
     M.xd = M.xd - x0;
     %
     % Now use the moulin positions to calculate the actual radius:
-    M.r_minor = max(M.r_minor + dC + dE + dM +dP, Mrmin);
+    M.r_minor = max(M.r_minor + dC_minor + dE_minor + dM_minor, Mrmin);
     M.r_major = (M.xd - M.xu) - M.r_minor;
     
     %M.r = M.r + dC + dE + dM + dP; % + dF + dM  + dP;
