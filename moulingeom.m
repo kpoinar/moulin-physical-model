@@ -273,11 +273,11 @@ for t = time.t
 %%%%%%%%%   
     %deal with the Vadd term by adding it to the next Qin timestep so that
     %it is integrated 
-%     if cc < length(time.t)
-%         Qin(cc+1) = Qin(cc+1) + mean([Vadd_minor*ones(1,3) Vadd_major])./dt;
-%         % Our moulin has 3 semi-minor axes and 1 semi-major axis, so
-%         % average accordingly.
-%     end
+    if cc < length(time.t)
+        Qin(cc+1) = Qin(cc+1) + mean([Vadd_minor*ones(1,3) Vadd_major])./dt;
+        % Our moulin has 3 semi-minor axes and 1 semi-major axis, so
+        % average accordingly.
+    end
     
 %%%%%%%%% dE: Elastic deformation   
 % Elastic deformation: do this last because it is a function of moulin 
