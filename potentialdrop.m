@@ -1,4 +1,4 @@
-function dP = potentialdrop(Qin,z,hw,Mr,dt,C,f)
+function dP = potentialdrop(Qin,wet,Mr,dt,C,f)
 %
 % Convert potential energy released into latent heat to melt the ice that
 % is NOT underwater
@@ -20,4 +20,4 @@ dP = C.rhow / C.rhoi *C.g / C.Lf * Qin*dt ./ (2*pi*Mr);
 dP = dP .* f;
 %
 % Erase dP below the water line
-dP(z<hw) = 0;
+dP(wet) = 0;

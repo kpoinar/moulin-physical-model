@@ -53,10 +53,13 @@ waterpresent(waterpresent<0) =1; %water is not present, so calculations need to 
  dL = diff(Mxu);
  dL = [dL(1); dL];
  dL(end) =  dL(end-1);
+ dL = max(dL,0);  % protect against negative dL
+ %dL = dz;% 
  dL = sqrt(dL.^2 + dz.^2);
 
      % Find out where dL is zero. We'll need to replace these indices.
-     repl = dL==0;
+     repl = dL<=0;
+     dL = max(dL,0);  % protect against negative dL
 
 %%%%%%%%%%%%% calculate the wetted perimeter, hydraulic diameter, and hydraulic radius 
 Mp = (pi.* (3 .* Mr_minor + 3 .* Mr_major - sqrt( (3 .* Mr_minor + Mr_major) .* (Mr_minor + 3 .* Mr_major)))) ./2; % moderate complexity ellipse circumfrence divided by 2
@@ -70,12 +73,19 @@ Rh   = area_ell ./ Mp; % hydraulic radius
 Tmw  =  273.15;   
 
 %%%%%%%%%%%%%% select the appropriate parameterization of DW friction factor
-if Bathurst
-    fR =10* 1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %#ok<UNRCH> %Bathurst parameterization for DW friction factor
-else
+% if Bathurst
+%     fR =10* 1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %#ok<UNRCH> %Bathurst parameterization for DW friction factor
+% else
     fR = (1./(-2.*log10((ks./Dh)./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
-    %fR(:,ii) = 0.01;
-end
+% end
+
+
+
+
+% fR = 0.1;  % typical value of roughness used in subg models and suchlike
+%fR = 100;  % ~75 is maximum observation reported by Gulley et al. (2013)
+fR = 1;
+
 
 
 %%%%%%%%%%%%%% expected headloss based on the discharge
@@ -85,14 +95,14 @@ hL = (((Qin./area_ell).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
 %%%%%%%%%%%%% calculate the expected melt 
 if include_ice_temperature
     dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ...
-                ./ (area_ell .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf));
+                ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf));
 
     %This is modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
     % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
     % include the surrounding ice temperature 
     
 else
-    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ./ (area_ell .* C.rhoi .* C.Lf); %#ok<UNRCH>
+    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ./ (Mp .* C.rhoi .* C.Lf); %#ok<UNRCH>
     % This parameterization is closer to that which is traditionally used
     % to calculate melting within a subglacial channel where the ice and
     % water are at the same temperature
