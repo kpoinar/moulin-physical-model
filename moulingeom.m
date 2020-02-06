@@ -11,8 +11,8 @@
 clear variables
 close all
 
-warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal, 
-%but I havent figured out how to fix a problem with ode15s (couldnt find a solution for ode45, which just returned NaNs)
+%Warning: Failure at t=2.700000e+04.  Unable to meet integration tolerances without reducing the step size
+%below the smallest value allowed (5.820766e-11) at time t. %These warnings off is not ideal, 
 % - essentially when the water level is at or above the ice thickness,
 % the initial conditions matrix becomes singlar/badly scaled - I *think*
 % that this is okay in our circumstance (i.e. ode15s wants the hw to be
@@ -27,7 +27,7 @@ warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal,
 
 
 % Do you want to plot using lauren's plotting function?
-plot_using_lauren =  true;
+make_simple_plots =  true;
 save_figures      =  false;
 visible_figures   =  true;
 
@@ -40,8 +40,8 @@ datetime = datestr(now,'mm-dd-yyyy_HHMM'); %This will assign a unique date and t
 %% define som basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 10;             %set the number of days for the model run
-H         = 500;            % ice thickness, meters
+numofdays = 20;             %set the number of days for the model run
+H         = 800;            % ice thickness, meters
 R0        = 3;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
 f         = 0.05;           % fraction of the potential energy used to open the top of the moulin (above water level)
@@ -57,7 +57,7 @@ chebx     = 0;              % chebx=1 is not working yet
 nt        = 1000;           % plot every nt timesteps
 % artesian  = 1;              % allow moulin to shed water?
 % Qscale    = 1;              % factor to scale FOXX runoff by
-E         = 3;             % enhancement factor for creep
+E         = 5;             % enhancement factor for creep
 
 % HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
 %% set the vertical model components
@@ -84,14 +84,15 @@ Qcos2   = Qcos2(1:end,:) ;
 %diurnal variability.
 
 % Small melt event input:
-Qin     = interp1(Qcos2(:,1), Qcos2(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+%Qin     = interp1(Qcos2(:,1), Qcos2(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
 % Big melt event input:
 Qin     = interp1(Qcos2(:,1), Qcos2(:,3), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
 % Quasi real/random input:
-Qin     = interp1(Qcos2(:,1), Qcos2(:,6), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-Qin     = Qin*0.5 +4; %scale Qin to deal with a few model issues
+Qin     = interp1(Qcos2(:,1), Qcos2(:,5), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+Qin     = Qin*0.8 +3; %scale Qin to deal with a few model issues
 time.Qin = Qin;  %save for future plotting
 clear Qcos2
+
 %% set Ice temperature characteristics 
 Tz      = importTz('Ryser_foxx',z);
 Tfar    = Tz; % Kelvin
@@ -145,6 +146,9 @@ Bathurst = true; %true means that the friction factor is calculated using..
 % if false, the Colebrook-White formulation will be applied, which is only
 % valid when roughness height ./ hydrualic diameter < 0.05
 
+%And initialize the added melt components
+% Vadd = 0;
+% Vadd_
 %% Assign elastic deformation parameters
 stress.sigx = -50e3;  % compressive
 stress.sigy = -50e3;  % compressive
@@ -225,6 +229,7 @@ for t = time.t
     y0 = [hw, S];
     %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
     opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
+    %Qin_tot       = Qin(cc) + time.V
     [hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
     
     time.S(cc)    = S;
@@ -303,14 +308,14 @@ for t = time.t
     time.dG(:,cc) = dG;
     
 %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-   [dOC, Qoc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature);
+   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature);
   
    % Scale the open channel displacement down by 1/2 to reflect the
    % displacement at exactly the upstream point:
    dOC = dOC / 2;
    
    time.dOC(:,cc)  =  dOC;
-   time.Qoc(cc)    =  Qoc;
+   time.Vadd_oc(cc)    =  Vadd_oc;
     
     % Calculate the horizontal position of the moulin within the ice column
     M.xu = M.xu - dC_major - dE_major - dM_major + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
@@ -346,8 +351,8 @@ for t = time.t
 end
 %% figures
 
-if plot_using_lauren
-    laurensplots(time, save_figures, save_location, datetime, visible_figures)
+if make_simple_plots
+    simpleplots(time, save_figures, save_location, datetime, visible_figures)
 end
 
 
