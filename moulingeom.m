@@ -252,16 +252,17 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-   [dM_minor, uw_minor] = turbulence(hw, Qout, Mrminor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
-       time.dM_minor(:,cc)  =  dM_minor;
-       time.uw_minor(:,cc)  =  uw_minor;
-       %time.Vadd_minor(cc)  = Vadd_minor;
-   [dM_major, uw_major] = turbulence(hw, Qout, Mrmajor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
-       time.dM_major(:,cc)  =  dM_major;
-       time.uw_major(:,cc)  =  uw_major;
+   [dM, uw, Vadd] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature);
+       time.dM(:,cc)  =  dM;
+       time.uw(:,cc)  =  uw;
+      % time.V(cc)  = Vadd;
+   %[dM_major, uw_major] = turbulence(hw, Qout, Mrmajor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
+   %    time.dM_major(:,cc)  =  dM_major;
+   %    time.uw_major(:,cc)  =  uw_major;
        %time.Vadd_major(cc)  = Vadd_major;
    % Calculate the water volume added to the moulin by calculating the enlargement of the moulin due to turbulent melting 
-       Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM_minor, dM_major, z, wet);
+       %Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet);
+       Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet, dt);
        time.Vadd_turb(cc) = Vadd_turb;
 
 %%%%%%%%% Vadd: Added water from melted ice into Qin
@@ -306,11 +307,11 @@ for t = time.t
    time.Vadd_oc(cc)    =  Vadd_oc;
     
     % Calculate the horizontal position of the moulin within the ice column
-    M.xu = M.xu - dC_major - dE_major - dM_major + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
+    M.xu = M.xu - dC_major - dE_major - dM + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
                                 % Important Note: the +dG above is correct.
                                 % The upstream wall moves downstream.
                                 
-    M.xd = M.xd + dC_minor + dE_minor + dM_minor + dG;% + dP;
+    M.xd = M.xd + dC_minor + dE_minor + dM + dG;% + dP;
                                 % The downstream wall also moves downstream
                                 % at the same rate, dG.
 
@@ -321,7 +322,7 @@ for t = time.t
     M.xd = M.xd - x0;
     %
     % Now use the moulin positions to assign the major and minor radii:
-    M.r_minor = max(M.r_minor + dC_minor + dE_minor + dM_minor, Mrmin);
+    M.r_minor = max(M.r_minor + dC_minor + dE_minor + dM, Mrmin);
     M.r_major = (M.xd - M.xu) - M.r_minor;
         
     % Record the used moulin geometry 

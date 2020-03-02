@@ -1,4 +1,4 @@
-function dV = waterVolumeFromTurbulence(r1, r2, dr1, dr2, z, wet, dt)
+function dV = waterVolumeFromTurbulence(r1, r2, dr1, z, wet, dt)
 %
 % Compare the old area and the new area at each level z
 % Area of moulin:
@@ -9,7 +9,7 @@ function dV = waterVolumeFromTurbulence(r1, r2, dr1, dr2, z, wet, dt)
 C = makeConstants;
 %
 Aold = pi/2 * r1 .* (r1 + r2);
-Anew = pi/2 * (r1 + dr1) .* (r1 + r2 + dr1 + dr2);
+Anew = pi/2 * (r1 + dr1) .* (r1 + r2 + dr1*2);
 %
 % Area change:
 dA = Anew - Aold;
