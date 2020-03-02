@@ -1,4 +1,4 @@
-function dV = waterVolumeFromTurbulence(r1, r2, dr1, dr2, z, wet)
+function dV = waterVolumeFromTurbulence(r1, r2, dr1, dr2, z, wet, dt)
 %
 % Compare the old area and the new area at each level z
 % Area of moulin:
@@ -19,5 +19,7 @@ dV = trapz(z(wet),dA(wet));
 %
 % That is ice volume.  Convert to water volume (it is lower):
 dV = dV * C.rhoi / C.rhow;
-
+%
+% And divide by dt?
+dV = dV / dt;
 
