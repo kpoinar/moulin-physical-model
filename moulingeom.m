@@ -297,7 +297,7 @@ for t = time.t
     time.dG(:,cc) = dG;
     
 %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature);
+   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature, wet);
   
    % Scale the open channel displacement down by 1/2 to reflect the
    % displacement at exactly the upstream point:
