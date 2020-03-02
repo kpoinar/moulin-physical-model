@@ -252,7 +252,7 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-   [dM, uw, Vadd] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature);
+   [dM, uw, Vadd_turb] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature);
        time.dM(:,cc)  =  dM;
        time.uw(:,cc)  =  uw;
       % time.V(cc)  = Vadd;
@@ -262,8 +262,18 @@ for t = time.t
        %time.Vadd_major(cc)  = Vadd_major;
    % Calculate the water volume added to the moulin by calculating the enlargement of the moulin due to turbulent melting 
        %Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet);
-       Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet, dt);
+%        Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet, dt);
        time.Vadd_turb(cc) = Vadd_turb;
+       
+%%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
+   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature, wet);
+  
+   % Scale the open channel displacement down by 1/2 to reflect the
+   % displacement at exactly the upstream point:
+   dOC = dOC / 2;
+   
+   time.dOC(:,cc)  =  dOC;
+   time.Vadd_oc(cc)    =  Vadd_oc;
 
 %%%%%%%%% Vadd: Added water from melted ice into Qin
     % NOTE 2 MARCH 2020: This is a large amount of meltwater (~8 m2 per dt)
@@ -271,7 +281,7 @@ for t = time.t
     % if the moulin and subglacial conduit aren't big enough.
     % Add the  
     if cc < length(time.t)
-        Qin(cc+1) = Qin(cc+1) + Vadd_turb;
+        Qin(cc+1) = Qin(cc+1) + Vadd_turb / dt + Vadd_oc / dt;
     end
     
 %%%%%%%%% dE: Elastic deformation   
@@ -296,15 +306,6 @@ for t = time.t
     dG = deformGlen(H, T, alpha, z, n, dt, C);
     time.dG(:,cc) = dG;
     
-%%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature, wet);
-  
-   % Scale the open channel displacement down by 1/2 to reflect the
-   % displacement at exactly the upstream point:
-   dOC = dOC / 2;
-   
-   time.dOC(:,cc)  =  dOC;
-   time.Vadd_oc(cc)    =  Vadd_oc;
     
     % Calculate the horizontal position of the moulin within the ice column
     M.xu = M.xu - dC_major - dE_major - dM + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
