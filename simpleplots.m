@@ -73,7 +73,7 @@ xlabel('dRadius (m d^{-1})')
 title('Turbulent melting')
 
 for jj = 1:1:length(timewindow) % plot every 12 hours for the full model run
-plot( ((time.dM_minor(:,(43200/time.dt).*jj) +  time.dM_major(:,(43200/time.dt).*jj))./2)   .* (86400/time.dt) ,(time.z), 'linewidth', 1, 'color', reds(jj,:) )
+plot( time.dM(:,(43200/time.dt).*jj)  .* (86400/time.dt) ,(time.z), 'linewidth', 1, 'color', reds(jj,:) )
 
 
 end
