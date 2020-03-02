@@ -85,6 +85,8 @@ Tmw  =  273.15;
 % fR = 0.1;  % typical value of roughness used in subg models and suchlike
 %fR = 100;  % ~75 is maximum observation reported by Gulley et al. (2013)
 fR = 1;
+fR = 0.1;
+fR = 1e-9;
 
 
 
