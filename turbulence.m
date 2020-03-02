@@ -1,4 +1,4 @@
-function [dM, uw, Vadd] =turbulence(hw, Qout, Mr, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature)
+function [dM, uw, Vadd] =turbulence(hw, Qout, Mrminor, Mrmajor, Mxd, dt, Ti,dz, z, relative_roughness, Bathurst, include_ice_temperature)
 
 %
 % Moulin discharge (Qout) is dependent on the height of the water within the
@@ -33,7 +33,7 @@ ks = relative_roughness;
 
 waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
 waterpresent(waterpresent<0) =0;
-S = (pi * Mr.^2);
+S = (pi .* Mrminor .*Mrmajor);
 uw = Qout ./  S; %calculate the water velocity in each node 
 uw(waterpresent ==0) =0; % if there is no water in a given cell,
 
@@ -49,9 +49,9 @@ end
 uw = min(uw,9.3);
 % ------------------------------
 
-Mp   = 2 .* pi .* Mr; % wetted/melting perimeter
-Dh   = (4*(pi .* Mr.^2)) ./ Mp; %hydrualic diameter
-Rh   = (pi.* Mr.^2) ./ Mp; % hydraulic radius
+Mp   = pi.* (3 .*(Mrminor + Mrmajor) - sqrt((3.* Mrminor + Mrmajor) .* (Mrminor +3 .* Mrmajor))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
+Dh   = (4.*(pi .* Mrminor .* Mrmajor)) ./ Mp; %hydrualic diameter
+Rh   = (pi.* Mrminor .* Mrmajor) ./ Mp; % hydraulic radius
     % flag if the ks/dh ratio is less than 0.05
     % if (ks/Dh) < 0.05
     %     disp('ks/dh < 0.05')
@@ -72,25 +72,33 @@ else
     %fR(:,ii) = 0.01;
 end
 
+fR =1;
 
 % calculate the lengthscale over which head loss is determined...
 % this is simply the length of the model grid cells unless they become
 % non-uniform
-dz          = nanmean(diff(z));
+%%%%%%%%%%%%% calculate the length overwhich the water is experiencing headloss
+ dL = diff(Mxd);
+ dL = [dL(1); dL];
+ dL(end) =  dL(end-1);
+ dL = max(dL,0);  % protect against negative dL
+ %dL = dz;% 
+ dL = sqrt(dL.^2 + dz.^2);
+%dz          = nanmean(diff(z));
 
 % calculate head loss following Munson 2005
-hL  =  ((uw.^2) .* fR .* dz) ./(2 .* Dh .* C.g);
+hL  =  ((uw.^2) .* fR .* dL) ./(2 .* Dh .* C.g);
 
 
 if include_ice_temperature
-    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dz)) ...
-                ./ (2 .* pi .* Mr .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
+    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+                ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
     %This tis modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
     % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
     % include the surrounding ice temperature 
     
 else
-    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dz)) ./ (2 .* pi .* Mr .* C.rhoi .* C.Lf); %#ok<UNRCH>
+    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ./ (Mp.* C.rhoi .* C.Lf); %#ok<UNRCH>
     % This parameterization is closer to that which is traditionally used
     % to calculate melting within a subglacial channel where the ice and
     % water are at the same temperature
@@ -102,10 +110,10 @@ dM_dt(waterpresent == 0) = 0;
 dM  = dM_dt .* dt; %change in radius over the given time step
 
 % Smooth it over a 10 meter reach
-nsm = round(10 / dz);
+nsm = round(10/ 1);
 dM = fastsmooth(dM,nsm,3,1);
 
-Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater gained due to melting the surrounding ice
+Vadd = C.rhoi/C.rhow * trapz(Mp .* dM, z); %volume of meltwater gained due to melting the surrounding ice
 
 
 
