@@ -113,7 +113,7 @@ dM  = dM_dt .* dt; %change in radius over the given time step
 nsm = round(10/ 1);
 dM = fastsmooth(dM,nsm,3,1);
 
-Vadd = C.rhoi/C.rhow * trapz(Mp .* dM, z); %volume of meltwater gained due to melting the surrounding ice
+Vadd = C.rhoi/C.rhow * trapz(z, Mp .* dM); %volume of meltwater gained due to melting the surrounding ice
 
 
 
