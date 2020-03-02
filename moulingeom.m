@@ -9,10 +9,10 @@
 %
 
 clear variables
-% close all
+close all
 
-warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal, 
-%but I havent figured out how to fix a problem with ode15s (couldnt find a solution for ode45, which just returned NaNs)
+%Warning: Failure at t=2.700000e+04.  Unable to meet integration tolerances without reducing the step size
+%below the smallest value allowed (5.820766e-11) at time t. %These warnings off is not ideal, 
 % - essentially when the water level is at or above the ice thickness,
 % the initial conditions matrix becomes singlar/badly scaled - I *think*
 % that this is okay in our circumstance (i.e. ode15s wants the hw to be
@@ -27,21 +27,21 @@ warning('off', 'MATLAB:illConditionedMatrix')%These warnings off is not ideal,
 
 
 % Do you want to plot using lauren's plotting function?
-plot_using_lauren =  true;
+make_simple_plots =  true;
 save_figures      =  false;
 visible_figures   =  true;
 
 % Do you want to save the 'time' structure? This has (almost) everything
 % documented...
-save_timevariable =  true; 
+save_timevariable =  false; 
 
 save_location = './modeloutputs';
 datetime = datestr(now,'mm-dd-yyyy_HHMM'); %This will assign a unique date and time for both the figures and the model outputs
-%% define some basic parameters
+%% define som basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 2;             %set the number of days for the model run
-H         = 500;            % ice thickness, meters
+numofdays = 20;             %set the number of days for the model run
+H         = 800;            % ice thickness, meters
 R0        = 0.5;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
 f         = 0.05;           % fraction of the potential energy used to open the top of the moulin (above water level)
@@ -57,7 +57,7 @@ chebx     = 0;              % chebx=1 is not working yet
 nt        = 1000;           % plot every nt timesteps
 % artesian  = 1;              % allow moulin to shed water?
 % Qscale    = 1;              % factor to scale FOXX runoff by
-E         = 3;             % enhancement factor for creep
+E         = 5;             % enhancement factor for creep
 
 % HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
 %% set the vertical model components
@@ -66,7 +66,7 @@ z         = (0:dz:H)';
 time.z    = z; %save the z profile in time
 %% set the duration of the model run
 sec       = 86400*numofdays;   %seconds * days
-dt        = 30;        % Timestep, seconds (30 minutes)
+dt        = 300;        % Timestep, seconds (30 minutes)
 tmax      = sec;        % seconds (5 years here)
 time.t    = dt:dt:tmax; % seconds
 time.dt   = dt;
@@ -84,21 +84,15 @@ Qcos2   = Qcos2(1:end,:) ;
 %diurnal variability.
 
 % Small melt event input:
-% Qin     = interp1(Qcos2(:,1), Qcos2(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+%Qin     = interp1(Qcos2(:,1), Qcos2(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
 % Big melt event input:
-% Qin     = interp1(Qcos2(:,1), Qcos2(:,3), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-% Qin     = Qin*0.5 + 5; %scale Qin to deal with a few model issues
-
+Qin     = interp1(Qcos2(:,1), Qcos2(:,3), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
 % Quasi real/random input:
-Qin     = interp1(Qcos2(:,1), Qcos2(:,6), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-Qin     = Qin*0.5 + 3; %scale Qin to deal with a few model issues
-
-
-% FIXED recharge
-Qin = 0*Qin + 5;
-%
+Qin     = interp1(Qcos2(:,1), Qcos2(:,5), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+Qin     = Qin*0.8 +3; %scale Qin to deal with a few model issues
 time.Qin = Qin;  %save for future plotting
 clear Qcos2
+
 %% set Ice temperature characteristics 
 Tz      = importTz('Ryser_foxx',z);
 Tfar    = Tz; % Kelvin
@@ -134,7 +128,7 @@ M.xd = M.xd - x0;
 %% Set turbulence parameters
 
 relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence.
-relative_roughness_OC = 1e-10;%1e-9;%1e-12;  % This one modifies the melt from open channel flow.
+relative_roughness_OC = 1e-9;%1e-12;  % This one modifies the melt from open channel flow.
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
 %the calculated change in moulin radius. If false, it makes the implicit
@@ -152,6 +146,9 @@ Bathurst = true; %true means that the friction factor is calculated using..
 % if false, the Colebrook-White formulation will be applied, which is only
 % valid when roughness height ./ hydrualic diameter < 0.05
 
+%And initialize the added melt components
+% Vadd = 0;
+% Vadd_
 %% Assign elastic deformation parameters
 stress.sigx = -50e3;  % compressive
 stress.sigy = -50e3;  % compressive
@@ -170,6 +167,30 @@ time.parameters.L =L;
 time.parameters.R0 = R0;
 time.parameters.numofdays =  numofdays;
 time.parameters.f = f;
+%% Set up initial figure
+
+% figure(3); clf;
+% NP = 5; ii=1;
+% subplot(1,NP,1); hold on; title('Moulin radius'); xlabel('meters'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Creep'); xlabel('m / dt'); ii=ii+1;
+% % subplot(1,NP,ii); hold on; title('Refreezing'); xlabel('m / dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Turbulent melt'); xlabel('m /dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Potential energy melt-out'); xlabel('m /dt'); ii=ii+1;
+% subplot(1,NP,ii); hold on; title('Elastic'); xlabel('m / dt')
+% %
+% % Record minimum and maximum moulin diameter
+% time.Mrmm = zeros(2,numel(time.t));
+% time.V    = zeros(size(time.t));
+% time.hw   = zeros(size(time.t));
+% time.Vcapacity = zeros(size(time.t));
+% time.Vfrz = zeros(size(time.t));
+% time.Vturb = zeros(size(time.t));
+% dF = zeros(size(z));
+% dE = zeros(size(z));
+% dC = zeros(size(z));
+% dM = zeros(size(z));
+% dP = zeros(size(z));
+
 
 %% Step through time
 cc = 0;
@@ -207,7 +228,8 @@ for t = time.t
     tspan = [t,t+dt];
     y0 = [hw, S];
     %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
-    opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3), 'MaxStep',500);
+    opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
+    %Qin_tot       = Qin(cc) + time.V
     [hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
     
     time.S(cc)    = S;
@@ -286,14 +308,14 @@ for t = time.t
     time.dG(:,cc) = dG;
     
 %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-   [dOC, Qoc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature);
+   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature);
   
    % Scale the open channel displacement down by 1/2 to reflect the
    % displacement at exactly the upstream point:
    dOC = dOC / 2;
    
    time.dOC(:,cc)  =  dOC;
-   time.Qoc(cc)    =  Qoc;
+   time.Vadd_oc(cc)    =  Vadd_oc;
     
     % Calculate the horizontal position of the moulin within the ice column
     M.xu = M.xu - dC_major - dE_major - dM_major + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
@@ -329,11 +351,11 @@ for t = time.t
 end
 %% figures
 
-if plot_using_lauren
-    laurensplots(time, save_figures, save_location, datetime, visible_figures)
+if make_simple_plots
+    simpleplots(time, save_figures, save_location, datetime, visible_figures)
 end
 
-
+%%
 
 
 if save_timevariable
@@ -343,7 +365,6 @@ if save_timevariable
   cd(tmp);
   filename = ['modelrun', '_R0-', num2str(R0), '_H-', num2str(H), '_', num2str(numofdays), 'd_',  datetime, '_outputs.mat']
   save(filename, 'time')
-  cd ../../
 end 
 
 
