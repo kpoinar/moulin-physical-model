@@ -42,7 +42,7 @@ C         = makeConstants;  %constants used for parameterizations
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
 numofdays = 20;             %set the number of days for the model run
 H         = 800;            % ice thickness, meters
-R0        = 0.5;              % radius of moulin initially
+R0        = 5;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
 f         = 0.05;           % fraction of the potential energy used to open the top of the moulin (above water level)
 alpha     = 0.03;           % regional surface slope (unitless), for use in Glen's Flow Law
@@ -57,7 +57,7 @@ chebx     = 0;              % chebx=1 is not working yet
 nt        = 1000;           % plot every nt timesteps
 % artesian  = 1;              % allow moulin to shed water?
 % Qscale    = 1;              % factor to scale FOXX runoff by
-E         = 5;             % enhancement factor for creep
+E         = 3;             % enhancement factor for creep
 
 % HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
 %% set the vertical model components
@@ -156,7 +156,10 @@ stress.tauxy = 100e3; % shear opening
 
 %% Glen's flow law
 % Assign ice deformation A(T)
-A = AofT(Tz - C.T0);
+% A = AofT(Tz - C.T0);
+% This is now done internal within the two functions that use it:
+%   deformGlen.m
+%   creep.m 
 
 %% save general parameters in time file 
 time.parameters.stress = stress;
@@ -304,7 +307,7 @@ for t = time.t
         
     
 %%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
-    dG = deformGlen(H, alpha, A, z, n, dt, C);
+    dG = deformGlen(H, alpha, z, n, dt, C);
     time.dG(:,cc) = dG;
     
 %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
