@@ -1,4 +1,4 @@
-function [dOC, Qoc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature, wet)
+function [dOC, Vadd_oc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature, wet)
 
 
 % so the hydrualic radius will be calculated as the perimeter of 1/2 an
@@ -133,7 +133,7 @@ dOC  = dOC_dt .* dt;%change in radius over the given time step
 
 
 
-Qoc = C.rhoi/C.rhow * trapz(z, Mp .* dOC); %volume of meltwater gained due to melting the surrounding ice
+Vadd_oc = C.rhoi/C.rhow * trapz(z, Mp .* dOC); %volume of meltwater gained due to melting the surrounding ice
 
 % hL_L = hL./dL;
 % hL_L(waterpresent == 0) = 0;
