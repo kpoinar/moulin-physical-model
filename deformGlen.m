@@ -1,6 +1,6 @@
 % Deformation of moulin due to ice deformation via Glen's Flow Law
 %
-function dG = deformGlen(H, alpha, z, n, dt, C)
+function dG = deformGlen(H, T, alpha, z, n, dt, C)
 %
 % Glen's Flow Law integrated through the ice column
 %
