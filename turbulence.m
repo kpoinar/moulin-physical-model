@@ -1,4 +1,5 @@
-function [dM, uw, Vadd] =turbulence(hw, Qout, Mrminor, Mrmajor, Mxd, dt, Ti,dz, z, relative_roughness, Bathurst, include_ice_temperature)
+function [dM, uw, Vadd] =turbulence(hw, Qout, Mrminor, Mrmajor, Mxd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature)
+
 
 %
 % Moulin discharge (Qout) is dependent on the height of the water within the
@@ -31,11 +32,12 @@ ks = relative_roughness;
 %% Initiate calculations for turbulent melting
 
 
-waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
-waterpresent(waterpresent<0) =0;
+% waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
+% waterpresent(waterpresent<0) =0;
 S = (pi .* Mrminor .*Mrmajor);
 uw = Qout ./  S; %calculate the water velocity in each node 
-uw(waterpresent ==0) =0; % if there is no water in a given cell,
+% uw(waterpresent ==0) =0; % if there is no water in a given cell,
+uw(~wet) = 0; % if there is no water in a given cell, there is no water velocity
 
 % ------------------------------
 % Keep uw to a max of 9.3 m/s, artificially for now, which is the terminal velocity.
@@ -60,7 +62,7 @@ Rh   = (pi.* Mrminor .* Mrmajor) ./ Mp; % hydraulic radius
 
 % ------------------------------    
 % calculate the pressure melting temperature of ice/water %https://glaciers.gi.alaska.edu/sites/default/files/mccarthy/Notes_thermodyn_Aschwanden.pdf
-Pw   = C.rhow .* C.g .* waterpresent;
+Pw   = C.rhow .* C.g .* wet;
 Tmw  =  273.16 - 9.8e-8.*(Pw - 611.73);  
 
 
@@ -105,7 +107,7 @@ else
 end
 
 % Make sure that there is no melting in places without water
-dM_dt(waterpresent == 0) = 0;
+dM_dt(~wet) = 0;
 
 dM  = dM_dt .* dt; %change in radius over the given time step
 
@@ -113,7 +115,7 @@ dM  = dM_dt .* dt; %change in radius over the given time step
 nsm = round(10/ 1);
 dM = fastsmooth(dM,nsm,3,1);
 
-Vadd = C.rhoi/C.rhow * trapz(z, Mp .* dM); %volume of meltwater gained due to melting the surrounding ice
+Vadd = C.rhoi/C.rhow * trapz(z, Mp .* dM) / dt; %volume of meltwater gained due to melting the surrounding ice
 
 
 
