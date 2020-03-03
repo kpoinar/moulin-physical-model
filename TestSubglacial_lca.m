@@ -16,6 +16,8 @@ C = makeConstants;
 
 %Mr_z = interp1(z,Mr,199);
 
+opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
+
 
 H = 980; %Ice thickness
 L = 15e3; %
@@ -40,7 +42,7 @@ for ii = 1:length(time1)
     tspan = [time1(ii) time1(ii)+dt];
     y0    = [hw(ii) S(ii)];
      looptest = ii;
-    [hw(ii+1),S(ii+1),Qout(ii+1)] = subglacialsc(Mr,z,Qin(ii),H,L,C,tspan,y0);
+    [hw(ii+1),S(ii+1),Qout(ii+1)] = subglacialsc(Mr,z,Qin(ii),H,L,C,tspan,y0,opt);
 
     if hw(ii+1) > H
         hw(ii+1) = H;
