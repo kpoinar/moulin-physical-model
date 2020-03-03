@@ -1,4 +1,4 @@
-function [dOC, Qoc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature)
+function [dOC, Vadd_oc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature, wet)
 
 
 % so the hydrualic radius will be calculated as the perimeter of 1/2 an
@@ -44,10 +44,11 @@ ks = relative_roughness;
  %This is the change in the vertical
 
 
-%%%%%%%%%%%%%% zero the values of water below the water line
-waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
-waterpresent(waterpresent>=0) =0; %water is present
-waterpresent(waterpresent<0) =1; %water is not present, so calculations need to be done.
+%%%%%%%%%%%%%% zero the values of water below the water line, now done by
+%%%%%%%%%%%%%% wet
+% waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
+% waterpresent(waterpresent>=0) =0; %water is present
+% waterpresent(waterpresent<0) =1; %water is not present, so calculations need to be done.
 
 %%%%%%%%%%%%% calculate the length overwhich the water is experiencing headloss
  dL = diff(Mxu);
@@ -64,7 +65,6 @@ waterpresent(waterpresent<0) =1; %water is not present, so calculations need to 
 %%%%%%%%%%%%% calculate the wetted perimeter, hydraulic diameter, and hydraulic radius 
 Mp = (pi.* (3 .* Mr_minor + 3 .* Mr_major - sqrt( (3 .* Mr_minor + Mr_major) .* (Mr_minor + 3 .* Mr_major)))) ./2; % moderate complexity ellipse circumfrence divided by 2
 area_ell = Mr_minor .* Mr_major .* pi /2; %area of 1/2 of an ellipse
-
 Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
 Rh   = area_ell ./ Mp; % hydraulic radius
 
@@ -111,7 +111,7 @@ else
 end
 
 % Make sure that there is no melting in places without water
-dOC_dt(waterpresent == 0) = 0;
+dOC_dt(wet == 0) = 0;
 
 dOC  = dOC_dt .* dt;%change in radius over the given time step
 %
@@ -133,7 +133,7 @@ dOC  = dOC_dt .* dt;%change in radius over the given time step
 
 
 
-Qoc = trapz(C.rhoi/C.rhow * (Mp .* dOC) ./dt,z); %volume of meltwater gained due to melting the surrounding ice
+Vadd_oc = C.rhoi/C.rhow * trapz(z, Mp .* dOC); %volume of meltwater gained due to melting the surrounding ice
 
 % hL_L = hL./dL;
 % hL_L(waterpresent == 0) = 0;
