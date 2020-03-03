@@ -73,7 +73,7 @@ xlabel('dRadius (m d^{-1})')
 title('Turbulent melting')
 
 for jj = 1:1:length(timewindow) % plot every 12 hours for the full model run
-plot( time.dM(:,(43200/time.dt).*jj)  .* (86400/time.dt) ,(time.z), 'linewidth', 1, 'color', reds(jj,:) )
+plot( ((time.dM_minor(:,(43200/time.dt).*jj) +  time.dM_major(:,(43200/time.dt).*jj))./2)   .* (86400/time.dt) ,(time.z), 'linewidth', 1, 'color', reds(jj,:) )
 
 
 end
@@ -151,7 +151,7 @@ else
 end
 hold on
 set(gcf, 'position', [1          88        1771        1257])
-ax(1) = subplot(2,1,1);
+subplot(2,1,1)
 hold on
 plot(time.t/86400, time.hw) 
 plot([time.t(1)/86400 time.t(end)/86400], [time.parameters.H.*0.91 time.parameters.H .*0.91], '--k', 'linewidth',1)
@@ -163,7 +163,7 @@ plot(time.t/86400, time.S)
 ylabel('Subglacial cross-sectional area (m^2)', 'fontweight','bold')
 % 
 % 
-ax(2) = subplot(2,1,2);
+ subplot(2,1,2)
  hold on
  plot(time.t/86400, time.Qin)
  plot(time.t/86400, time.Qout)
@@ -171,55 +171,7 @@ ax(2) = subplot(2,1,2);
  ylabel('Discharge (m^3s^{-1})', 'fontweight','bold')
 xlabel('Time (days)', 'fontweight','bold')
 
-linkaxes(ax,'x');
 
-%%
-
-% Plot the moulin
-
-% Moulin plot distances
-    Moff = -2;  % meters offset to put the moulin more in the center of the plot
-    leftlim = -10;
-    rightlim = -leftlim;
-%
-% Colors for moulin plot
-watercolor = [0.4 0.8 1];
-rockcolor = [0.9 0.7 0.4];
-icecolor = [0.93 0.97 1];
-
-H = time.z(end);
-
-if visible_figures
-    figure
-else
-    figure('visible', 'off');
-end
-
- set(gcf,'position',[377    84   397   721])
-hold on
-
-    ii=length(time.t);
-    [~,j] = min(abs(time.z-time.hw(ii)));
-    % bed
-    patch(leftlim*[-1 -1 1 1 -1],[-100 0 0 -100 -100],rockcolor); hold on
-    % water
-    patch(Moff+[time.M.xu(1:j,ii); flipud(time.M.xd(1:j,ii)); time.M.xu(1,ii)],[time.z(1:j); flipud(time.z(1:j)); 0],watercolor); hold on
-    % ice
-    patch(Moff+[time.M.xu(:,ii); leftlim;  leftlim;  time.M.xu(1,ii)], [time.z; time.z(end); time.z(1); time.z(1)],icecolor);
-    patch(Moff+[time.M.xd(:,ii); rightlim-Moff; rightlim-Moff; time.M.xd(1,ii)], [time.z; time.z(end); time.z(1); time.z(1)],icecolor);
-    %
-    % moulin walls
-    plot(Moff+time.M.xu(:,ii),time.z,'-k',Moff+time.M.xd(:,ii),time.z,'-k')%,[-1 1]*Mr(j),[1 1]*hw,'-c')
-    % ice sheet surface
-    plot(Moff+[leftlim time.M.xu(end,ii) NaN time.M.xd(end,ii) rightlim-Moff],[1 1 1 1 1]*H,'-k')
-    % ice sheet basal surface
-    plot(Moff+[leftlim time.M.xu(1,ii) NaN time.M.xd(1,ii) rightlim-Moff],[0 0 0 0 0],'-k')
-    %
-    set(gca,'xlim',[leftlim rightlim],'ylim',[-50 H+50]);
-    xlabel('Moulin size (m)')
-    ylabel('meters above bed')
-    set(gca,'yaxislocation','right')
-    set(gca,'xaxislocation','top')
 % 
 if save_figures
   cd(savelocation)
