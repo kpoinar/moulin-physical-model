@@ -20,7 +20,7 @@ dydt(1): dhdt. Moulin head in function of time
 dydt(2): dSdt. Channel cross-section area in function of time
 
 %}
-hw = y(1);
+hw = max(y(1),0);  % protect against bogus negative water heights, which we found were sometimes returned (1/16/20 at GSFC)
 S = y(2);
 %y(1) = hw; I don't know if doing it this way would work
 %y(2) = S; 

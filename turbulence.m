@@ -101,6 +101,10 @@ dM_dt(waterpresent == 0) = 0;
 
 dM  = dM_dt .* dt; %change in radius over the given time step
 
+% Smooth it over a 10 meter reach
+nsm = round(10 / dz);
+dM = fastsmooth(dM,nsm,3,1);
+
 Vadd = C.rhoi/C.rhow * trapz(2*pi*Mr.*dM, z); %volume of meltwater gained due to melting the surrounding ice
 
 
