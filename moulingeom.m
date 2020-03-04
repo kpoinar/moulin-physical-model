@@ -35,14 +35,14 @@ visible_figures   =  true;
 % documented...
 save_timevariable =  false; 
 
-save_location = '/Users/lcandre2/Documents/Projects/moulin_formation/modeloutputs';
+save_location = './modeloutputs';
 datetime = datestr(now,'mm-dd-yyyy_HHMM'); %This will assign a unique date and time for both the figures and the model outputs
-%% define som basic parameters
+%% define some basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
 numofdays = 20;             %set the number of days for the model run
 H         = 800;            % ice thickness, meters
-R0        = 3;              % radius of moulin initially
+R0        = 5;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
 f         = 0.05;           % fraction of the potential energy used to open the top of the moulin (above water level)
 alpha     = 0.03;           % regional surface slope (unitless), for use in Glen's Flow Law
@@ -50,7 +50,7 @@ n         = 3;              % flow law exponent (Glen's Flow Law)
 
 %inital guesses for subglacial model
 hw(1) = H;                  % moulin water level (m)
-S(1)  = R0;                 % subglacial channel cross sectional area (m^2)
+S(1)  = 1.5*R0;                 % subglacial channel cross sectional area (m^2)
 
 
 chebx     = 0;              % chebx=1 is not working yet
@@ -156,7 +156,10 @@ stress.tauxy = 100e3; % shear opening
 
 %% Glen's flow law
 % Assign ice deformation A(T)
-A = AofT(Tz - C.T0);
+% A = AofT(Tz - C.T0);
+% This is now done internal within the two functions that use it:
+%   deformGlen.m
+%   creep.m 
 
 %% save general parameters in time file 
 time.parameters.stress = stress;
@@ -216,35 +219,18 @@ for t = time.t
     stress.hydro(~wet) = 0; % Anywhere that is not wet does not have the opening force from water
     
 %%%%%%%%%%
-%Water level and subglacial conditions
-%Dont let the water level go over the top of the ice    
-%     if hw > H
-%         time.excess(cc) = 
-%         hw = H;   
-%     elseif hw <= H
-%         hw = hw;     
-%     end
-
+% Subglacial Schoof model: Conduit size
     tspan = [t,t+dt];
     y0 = [hw, S];
-    %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
+            %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
     opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
-    %Qin_tot       = Qin(cc) + time.V
+            %Qin_tot       = Qin(cc) + time.V
     [hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
     
     time.S(cc)    = S;
     time.hw(cc)   = hw;
     time.Qout(cc) = Qout;
     
-    
-%     % Moulin water volume:
-%     V = watervolume(V,Vturb,Vfrz,Qin(cc),Qout(cc),dt);
-%     % Make an artesian spring if V > Vmoulin
-%     if artesian, V = min(trapz(z,pi*Mr.^2),V); end
-%     % How high does that fill the moulin?
-%     hw = waterlevel(Mr,z,V);
-%             time.hw(cc) = hw;
-%             time.V(cc) = V;
 
 
 
@@ -266,27 +252,40 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-   [dM_minor, uw_minor, Vadd_minor] = turbulence(hw, Qout, Mrminor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
-       time.dM_minor(:,cc)  =  dM_minor;
-       time.uw_minor(:,cc)  =  uw_minor;
-       time.Vadd_minor(cc)  = Vadd_minor;
-   [dM_major, uw_major, Vadd_major] = turbulence(hw, Qout, Mrmajor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
-       time.dM_major(:,cc)  =  dM_major;
-       time.uw_major(:,cc)  =  uw_major;
-       time.Vadd_major(cc)  = Vadd_major;
+   [dM, uw, Vadd_turb] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature);
+       time.dM(:,cc)  =  dM;
+       time.uw(:,cc)  =  uw;
+      % time.V(cc)  = Vadd;
+   %[dM_major, uw_major] = turbulence(hw, Qout, Mrmajor_prev, dt, Ti, z, relative_roughness, Bathurst, include_ice_temperature);
+   %    time.dM_major(:,cc)  =  dM_major;
+   %    time.uw_major(:,cc)  =  uw_major;
+       %time.Vadd_major(cc)  = Vadd_major;
+   % Calculate the water volume added to the moulin by calculating the enlargement of the moulin due to turbulent melting 
+       %Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet);
+%        Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet, dt);
+       time.Vadd_turb(cc) = Vadd_turb;
+       
+%%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
+   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature, wet);
+  
+   % Scale the open channel displacement down by 1/2 to reflect the
+   % displacement at exactly the upstream point:
+   dOC = dOC / 2;
+   
+   time.dOC(:,cc)  =  dOC;
+   time.Vadd_oc(cc)    =  Vadd_oc;
 
-%%%%%%%%%   
-    %deal with the Vadd term by adding it to the next Qin timestep so that
-    %it is integrated 
+%%%%%%%%% Vadd: Added water from melted ice into Qin
+    % NOTE 2 MARCH 2020: This is a large amount of meltwater (~8 m2 per dt)
+    % compared to the current Qin (~4 m2 per dt).  It can break the model
+    % if the moulin and subglacial conduit aren't big enough.
+    % Add the  
     if cc < length(time.t)
-        Qin(cc+1) = Qin(cc+1) + mean([Vadd_minor*ones(1,3) Vadd_major])./dt;
-        % Our moulin has 3 semi-minor axes and 1 semi-major axis, so
-        % average accordingly.
+        Qin(cc+1) = Qin(cc+1) + Vadd_turb / dt + Vadd_oc / dt;
     end
     
 %%%%%%%%% dE: Elastic deformation   
-% Elastic deformation: do this last because it is a function of moulin 
-  % radius.  Elastic deformation is small and sensitive to water pressure
+% Elastic deformation: This is small, and sensitive to water pressure
     dE_minor = elastic(Mrminor_prev,stress,C);
         time.dE_minor(:,cc) = dE_minor;
     dE_major = elastic(Mrmajor_prev,stress,C);
@@ -304,40 +303,28 @@ for t = time.t
         
     
 %%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
-    dG = deformGlen(H, alpha, A, z, n, dt, C);
+    dG = deformGlen(H, T, alpha, z, n, dt, C);
     time.dG(:,cc) = dG;
     
-%%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature);
-  
-   % Scale the open channel displacement down by 1/2 to reflect the
-   % displacement at exactly the upstream point:
-   dOC = dOC / 2;
-   
-   time.dOC(:,cc)  =  dOC;
-   time.Vadd_oc(cc)    =  Vadd_oc;
     
     % Calculate the horizontal position of the moulin within the ice column
-    M.xu = M.xu - dC_major - dE_major - dM_major + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
+    M.xu = M.xu - dC_major - dE_major - dM + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
                                 % Important Note: the +dG above is correct.
                                 % The upstream wall moves downstream.
                                 
-    M.xd = M.xd + dC_minor + dE_minor + dM_minor + dG;% + dP;
+    M.xd = M.xd + dC_minor + dE_minor + dM + dG;% + dP;
                                 % The downstream wall also moves downstream
                                 % at the same rate, dG.
-    %M.xd= max(M.xd, M.xu);
+
     % Shift them both back upstream so that the bed of the upstream wall
     % stays pinned at x = 0:
     x0 = M.xu(1);
     M.xu = M.xu - x0;
     M.xd = M.xd - x0;
     %
-    % Now use the moulin positions to calculate the actual radius:
-    M.r_minor = max(M.r_minor + dC_minor + dE_minor + dM_minor, Mrmin);
+    % Now use the moulin positions to assign the major and minor radii:
+    M.r_minor = max(M.r_minor + dC_minor + dE_minor + dM, Mrmin);
     M.r_major = (M.xd - M.xu) - M.r_minor;
-    
-    %M.r = M.r + dC + dE + dM + dP; % + dF + dM  + dP;
-    %M.r = max(M.r,Mrmin);
         
     % Record the used moulin geometry 
     time.M.r_minor(:,cc) = M.r_minor;
@@ -345,8 +332,10 @@ for t = time.t
     time.M.xu(:,cc) = M.xu;
     time.M.xd(:,cc) = M.xd;
     %
-    % Record volume capacity of moulin
-    [time.Mcapacity(cc), time.Wvolume(cc)] = moulincapacity(M,z, hw);
+    % Record volume capacity of moulin 
+    % This reflects the semi-ellipse, semi-circular geometry 
+    % and uses the variable "wet" for where is water.
+    [time.Mcapacity(cc), time.Wvolume(cc)] = moulincapacity(M,z,wet);
 
 end
 %% figures
@@ -355,7 +344,7 @@ if make_simple_plots
     simpleplots(time, save_figures, save_location, datetime, visible_figures)
 end
 
-
+%%
 
 
 if save_timevariable

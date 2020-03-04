@@ -15,11 +15,11 @@ C.A1= (6e-24);
 
 % Subglacialsc model constants
 C.c1 = 1/C.rhoi/C.Lf; % units; Melt opening parameter (Schoof 2010)
-C.c2 = 2*C.A1*C.n^(-C.n); % units; Closure parameter (Schoof 2010)
-%C.c3 = 2^(1/4) * (pi+2)^(1/2) / (pi^(1/4) * (C.rhow*C.f)^(1/2)); % units; Flux parameter (Schoof 2010)
-%      2^(5/4) / pi**(1/4) * sqrt( pi/ ((pi+2)*rho_w*f) ) # from Matt Covington pdf, 
+C.c2 = 1*C.A1*C.n^(-C.n); % units; Closure parameter (Schoof 2010)
+C.c3 = 2^(1/4) * (pi+2)^(1/2) / (pi^(1/4) * (C.rhow*C.f)^(1/2)); % units; Flux parameter (Schoof 2010)
+%C.c3 = 2^(5/4) / pi**(1/4) * sqrt( pi/ ((pi+2)*rho_w*f) ) # from Matt Covington pdf, 
 % for a semi-circular conduit, modified from Schoof whose equation appears to be incorrect. 
-C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/ sqrt(C.rhow*C.f);
+%C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/sqrt(C.rhow*C.f);
 
 
 %C.E = 1e12;
