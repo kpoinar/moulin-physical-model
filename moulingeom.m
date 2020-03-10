@@ -252,7 +252,7 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-   [dM, uw, Vadd_turb] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, dt, Ti, dz, z, relative_roughness, Bathurst, include_ice_temperature);
+   [dM, uw, Vadd_turb] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature);
        time.dM(:,cc)  =  dM;
        time.uw(:,cc)  =  uw;
       % time.V(cc)  = Vadd;
