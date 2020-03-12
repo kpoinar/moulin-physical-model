@@ -3,8 +3,8 @@ function C = makeConstants()
 C.T0 = 273.15; % Kelvin
 C.rhoi = 910;  % kg/m3; Ice density
 C.rhow = 1000; % kg/m3; Water density
-C.ki = 2.1;    % J/mKs
-C.cp = 2115;   % J/kgK (CT)specific heat at a certain pressure?? what is it?
+C.ki = 2.1;    % J/mKs; Thermal conductivity of ice
+C.cp = 2115;   % J/kgK Specific heat capacity of ice
 C.Lf = 335000; % J/kg; Latent heat of fusion
 C.g = 9.8;     % m/s2; Gravity
 C.E = 5e9;     % Pa; Young's elastic modulus (Vaughan 1995)
@@ -23,8 +23,7 @@ C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/sqrt(C.rhow*C.f); % Cor
 
 %C.E = 1e12;
 
-C.TD = C.ki /(C.rhoi * C.cp); % (m), diffusion of ...?? constant in setupx... (CT) ask what it is
-
+C.kappa = C.ki /(C.rhoi * C.cp); % (m2/s) Thermal diffusivity (Should always be around 1e-6, whatever the material)
 C.nu = 0.3;    % []; Poissons ratio for ice
 %
 % Glen's Flow Law -- Cuffey and Paterson Eqn. 3.35
