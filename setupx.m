@@ -1,7 +1,7 @@
 function [x,dx,nx] = setupx(dt,chebx,xmax,C)
 
 % The diffusion lengthscale:
-dx = sqrt(C.c * dt);   % meters
+dx = sqrt(C.TD * dt);   % meters
 switch chebx
     case 0
         % uniform resolution in x

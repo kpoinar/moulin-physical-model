@@ -4,7 +4,7 @@ C.T0 = 273.15; % Kelvin
 C.rhoi = 910;  % kg/m3; Ice density
 C.rhow = 1000; % kg/m3; Water density
 C.ki = 2.1;    % J/mKs
-C.cp = 2115;   % J/kgK
+C.cp = 2115;   % J/kgK (CT)specific heat at a certain pressure?? what is it?
 C.Lf = 335000; % J/kg; Latent heat of fusion
 C.g = 9.8;     % m/s2; Gravity
 C.E = 5e9;     % Pa; Young's elastic modulus (Vaughan 1995)
@@ -23,7 +23,7 @@ C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/sqrt(C.rhow*C.f); % Cor
 
 %C.E = 1e12;
 
-C.c = C.ki /(C.rhoi * C.cp); %constant in setupx... (CT) ask what it is
+C.TD = C.ki /(C.rhoi * C.cp); % (m), diffusion of ...?? constant in setupx... (CT) ask what it is
 
 C.nu = 0.3;    % []; Poissons ratio for ice
 %
