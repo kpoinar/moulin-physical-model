@@ -19,12 +19,11 @@ C.c2 = 1*C.A1*C.n^(-C.n); % units; Closure parameter (Schoof 2010)
 C.c3 = 2^(1/4) * (pi+2)^(1/2) / (pi^(1/4) * (C.rhow*C.f)^(1/2)); % units; Flux parameter (Schoof 2010)
 %C.c3 = 2^(5/4) / pi**(1/4) * sqrt( pi/ ((pi+2)*rho_w*f) ) # from Matt Covington pdf, 
 % for a semi-circular conduit, modified from Schoof whose equation appears to be incorrect. 
-%C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/sqrt(C.rhow*C.f);
-
+C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/sqrt(C.rhow*C.f); % Corrected by LCA
 
 %C.E = 1e12;
 
-
+C.c = C.ki /(C.rhoi * C.cp); %constant in setupx... (CT) ask what it is
 
 C.nu = 0.3;    % []; Poissons ratio for ice
 %

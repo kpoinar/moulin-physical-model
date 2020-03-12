@@ -1,12 +1,7 @@
-function [x,dx,nx] = setupx(dt,chebx,xmax)
+function [x,dx,nx] = setupx(dt,chebx,xmax,C)
 
-%Constants
-ki =    2.1; % J/mKs
-rhoi = 910; % kg/m3
-cp = 2115;  % J/kgK
-C = ki /(rhoi * cp); 
 % The diffusion lengthscale:
-dx = sqrt(C * dt);   % meters
+dx = sqrt(C.c * dt);   % meters
 switch chebx
     case 0
         % uniform resolution in x

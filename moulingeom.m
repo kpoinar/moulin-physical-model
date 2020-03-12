@@ -98,7 +98,7 @@ Tz      = importTz('Ryser_foxx',z);
 Tfar    = Tz; % Kelvin
 xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
 [x,dx,nx]...
-        = setupx(dt,chebx,xmax);
+        = setupx(dt,chebx,xmax,C);
 T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1)  = C.T0;   % Melting point at the moulin wall
 time.icetemp = Tz; %just save in the time file for reference
