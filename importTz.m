@@ -12,13 +12,13 @@ switch Tdatatype
         %
     case 'Temperate'
         % Temperate ice (no refreezing)
-        Tz = G.To*ones(size(z));
+        Tz = C.T0*ones(size(z));
     case 'Cool'
         Tmin = -5;
-        Tz = linspace(0,Tmin,numel(z))' + G.To;
+        Tz = linspace(0,Tmin,numel(z))' + C.T0;
     case 'Cold'
         Tmin = -3;
-        Tz = fastsmooth([linspace(0,Tmin,numel(z)/2) linspace(Tmin,Tmin/2,numel(z)/2+1)]',40,3,1) + G.To;
+        Tz = fastsmooth([linspace(0,Tmin,numel(z)/2) linspace(Tmin,Tmin/2,numel(z)/2+1)]',40,3,1) + C.T0;
     case 'HarrS2A'
         load fielddata/Harrington_temps_2015.mat
         harr15.S2_A_zeta = (harr15.S2_A_depth_m - min(harr15.S2_A_depth_m)) / (-min(harr15.S2_A_depth_m));
