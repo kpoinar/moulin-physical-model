@@ -1,4 +1,4 @@
-function A = flowlawexponent(T,P,C)
+function A = flowlawparameter(T,P,C)
 %
 % Glen's Flow Law -- Cuffey and Paterson Eqn. 3.35
 % A = Astar * exp(-Q / R *(1/Th - 1/Tstar))

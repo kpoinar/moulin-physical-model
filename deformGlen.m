@@ -6,7 +6,7 @@ function dG = deformGlen(H, T, alpha, z, n, dt, C)
 %
 % Pressure:
 P = C.rhoi*C.g*(H-z);
-A = flowlawexponent(mean(T,2),P,C) ;
+A = flowlawparameter(mean(T,2),P,C) ;
 %
 % u_defm = 2 * (rho * g * alpha).^n * integrate_bed^sfc ( A(z) * (H-z)^n) dz
 %
