@@ -154,13 +154,6 @@ stress.sigx = -50e3;  % compressive
 stress.sigy = -50e3;  % compressive
 stress.tauxy = 100e3; % shear opening
 
-%% Glen's flow law
-% Assign ice deformation A(T)
-% A = AofT(Tz - C.T0);
-% This is now done internal within the two functions that use it:
-%   deformGlen.m
-%   creep.m 
-
 %% save general parameters in time file 
 time.parameters.stress = stress;
 time.parameters.relative_roughness = relative_roughness;
