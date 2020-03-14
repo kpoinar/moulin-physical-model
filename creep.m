@@ -8,12 +8,9 @@
 % From Table 4 in Talalay and Hooke, 2007 (Annals)
 %
 function dC = creep(Mr,z,H,stress,T,dt,E,C)
-%
-% Assume A for temperate ice for now
-%A = mean(G.A0less * exp(-G.Qless / G.R ./ (G.To-[0 15])));
-%A = G.A0less * exp(-G.Qless / G.R ./ (T));
 % Pressure:
 P = C.rhoi*C.g*(H-z);
+%Calculate A based on ice temperature 
 A = flowlawparameter(mean(T,2),P,C) ;
 
 % % Ice hydrostatic stress (closure)
