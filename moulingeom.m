@@ -94,14 +94,14 @@ time.Qin = Qin;  %save for future plotting
 clear Qcos2
 
 %% set Ice temperature characteristics 
-Tz      = importTz('Ryser_foxx',z);
-Tfar    = Tz; % Kelvin
+
+Tfar    = importTz('Ryser_foxx',z); % Kelvin
 xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
 [x,dx,nx]...
         = setupx(dt,chebx,xmax,C);
 T       = Tfar*ones(size(x));  % Ambient ice temperature everywhere to start
 T(:,1)  = C.T0;   % Melting point at the moulin wall
-time.icetemp = Tz; %just save in the time file for reference
+time.icetemp = Tfar; %just save in the time file for reference
 %% define initial moulin characteristics
 
 %hw      = zeros(1,length(time.t));
