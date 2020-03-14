@@ -23,7 +23,7 @@
     % Stefan solution, but with t* instead of t. 
 %
 %
-function [Mr, dF, Tnew, Vfrz] = refreeze(Mr,Tzx,z,hw,dFprev,nx,x,dx,dt)
+function [Mr, dF, Tnew, Vfrz] = refreeze(Mr,Tzx,z,hw,dFprev,nx,x,dx,dt,C)
 %
 % Do 1D or 2D here?
 % Steepest temperature gradient across 50 meters in the vertical on the
@@ -51,22 +51,17 @@ Tnew = NaN(size(Tzx));
 % Holder for the temperature gradient near the moulin wall:
 Txscale = NaN(size(Tzx,1),2);
 % Constants
-ki =    2.1; % J/mKs
-rhoi = 910; % kg/m3
-rhow = 1000; % kg/m3
-cp = 2115;  % J/kgK
-Lf = 3.35e5; % J/kg
-C = ki /(rhoi * cp); 
+
 % The diffusion lengthscale:
-xscale = sqrt(C * dt);
+xscale = sqrt(C.kappa * dt);
 for r = 1:size(Tzx,1)
-    Tnew(r,:) = solveTmoulin(Tzx(r,:)',Tzx(r,1),Tzx(r,end),C,dFprev(r),nx,dx',dt);
+    Tnew(r,:) = solveTmoulin(Tzx(r,:)',Tzx(r,1),Tzx(r,end),C.kappa,dFprev(r),nx,dx',dt);
     Txscale(r,:) = interp1(x,Tnew(r,:),[0 xscale]);
 end
 % 
 % Translate the ice temperature gradient into a refreezing thickness for
 % this timestep
-dF = -abs(dt * ki / rhoi / Lf*diff(Txscale,[],2)/xscale);
+dF = -abs(dt * C.ki / C.rhoi / C.Lf*diff(Txscale,[],2)/xscale);
 %
 % No freezing where there's no water
 dF(z>hw) = 0;
@@ -79,4 +74,4 @@ dF = Mrnew - Mr;
 Mr = Mrnew;
 %
 % How much refroze?
-Vfrz = rhoi/rhow * trapz(z,2*pi*Mr.*dF);
+Vfrz = C.rhoi/C.rhow * trapz(z,2*pi*Mr.*dF);

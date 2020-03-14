@@ -135,7 +135,7 @@ include_ice_temperature = true; %true means that the change in the ice temperatu
 %assumption that the ice temperature and water temperature are both at the pressure melting temperature. 
 
 if include_ice_temperature
-    Ti = Tz;
+    Ti = Tfar;
 else
     Ti = NaN; %#ok<UNRCH>
 end
@@ -238,7 +238,7 @@ for t = time.t
 %%%%%%%%% dF: Refreezing
 % Refreezing
 %     T(z>hw,1) = Tair(cc);
-%     [~,dF,T,Vfrz] = refreeze(Mrminor_prev,T,z,hw,wet,dF,nx,x,dx,dt);
+%     [~,dF,T,Vfrz] = refreeze(Mrminor_prev,T,z,hw,wet,dF,nx,x,dx,dt,C);
 %             time.Vfrz(cc) = Vfrz;
 
 

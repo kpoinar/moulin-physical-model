@@ -1,12 +1,13 @@
 % Catania and Neumann 2010, Equation 1
 
-function [Mr, dF] = refreeze_simple(Mr,Tfar,z,hw,t,dt)
+function [Mr, dF] = refreeze_simple(Mr,Tfar,z,hw,t,dt,C)
 
-C = 2093; % J/kg/K
-Lf = 335000; % J/kg
-kappa = 37.2/31557600; % thermal diffusivity, m2/s : 1.18e-6
-dF = C*(Tfar-273.15)*2*sqrt(kappa*t/pi)/Lf;
-dFprev = C*(Tfar-273.15)*2*sqrt(kappa*(t-dt)/pi)/Lf;
+Constant = 2093; % J/kg/K %(CT)I don't know this constant. What should we call it?
+%kappa = 37.2/31557600; % thermal diffusivity, m2/s : 1.18e-6 (CT)replaced
+%this value with kappa in makeConstant, but value is slightly different.
+
+dF = Constant*(Tfar-T0)*2*sqrt(C.kappa*t/pi)/C.Lf;
+dFprev = Constant*(Tfar-T0)*2*sqrt(C.kappa*(t-dt)/pi)/C.Lf;
 dF = dF + dFprev;
 % No freezing where there's no water
 dF(z>hw) = 0;
