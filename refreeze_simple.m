@@ -15,5 +15,5 @@ dF(z>hw) = 0;
 % Calculate new moulin radius, while making sure that dF didn't freeze 
 % more than the moulin diameter
 Mrnew = max(Mr + dF,0);
-dF = Mrnew - Mr;
+dF = Mrnew - Mr; %implement ceiling
 Mr = Mrnew;
