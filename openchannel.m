@@ -111,7 +111,7 @@ else
 end
 
 % Make sure that there is no melting in places without water
-dOC_dt(wet == 0) = 0;
+dOC_dt(wet) = 0;
 
 dOC  = dOC_dt .* dt;%change in radius over the given time step
 %

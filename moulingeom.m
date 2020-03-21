@@ -33,16 +33,16 @@ visible_figures   =  true;
 
 % Do you want to save the 'time' structure? This has (almost) everything
 % documented...
-save_timevariable =  false; 
+save_timevariable =  true; 
 
 save_location = './modeloutputs';
 datetime = datestr(now,'mm-dd-yyyy_HHMM'); %This will assign a unique date and time for both the figures and the model outputs
 %% define some basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 20;             %set the number of days for the model run
+numofdays = 1;             %set the number of days for the model run
 H         = 800;            % ice thickness, meters
-R0        = 5;              % radius of moulin initially
+R0        = 1;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
 f         = 0.05;           % fraction of the potential energy used to open the top of the moulin (above water level)
 alpha     = 0.03;           % regional surface slope (unitless), for use in Glen's Flow Law
@@ -347,6 +347,7 @@ if save_timevariable
   cd(tmp);
   filename = ['modelrun', '_R0-', num2str(R0), '_H-', num2str(H), '_', num2str(numofdays), 'd_',  datetime, '_outputs.mat']
   save(filename, 'time')
+  cd('../..')
 end 
 
 
