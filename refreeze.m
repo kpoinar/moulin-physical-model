@@ -23,7 +23,7 @@
     % Stefan solution, but with t* instead of t. 
 %
 %
-function [Mr, dF, Tnew, Vfrz] = refreeze(Mr,Tzx,z,hw,dFprev,nx,x,dx,dt,C)
+function [Mr, dF, Tnew, Vfrz] = refreeze(Mrminor,Mrmajor,Tzx,z,hw,dFprev,nx,x,dx,dt,C)
 %
 % Do 1D or 2D here?
 % Steepest temperature gradient across 50 meters in the vertical on the
@@ -69,9 +69,13 @@ dF(z>hw) = 0;
 %
 % Calculate new moulin radius, while making sure that dF didn't freeze 
 % more than the moulin diameter
-Mrnew = max(Mr + dF,0);
-dF = Mrnew - Mr;
-Mr = Mrnew;
+Mrminornew = max(Mrminor + dF,0);
+Mrmajornew = max(Mrmajor + dF,0);
+dF_major = Mrmajornew - Mrmajor; % implement ceiling
+dF_minor = Mrminornew - Mrminor; % implement ceiling
 %
 % How much refroze?
-Vfrz = C.rhoi/C.rhow * trapz(z,2*pi*Mr.*dF);
+%Vfrz = C.rhoi/C.rhow * trapz(z,2*pi*Mr.*dF);
+
+% How much water loss occurred to refreezing?
+Vfrz = C.rhoi/C.rhow * (trapz(z,pi*Mrminor.*dF_minor) + trapz(z,0.5*ellipseperimeter(Mrminor,Mrmajor).*dF_major));

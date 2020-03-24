@@ -239,7 +239,7 @@ for t = time.t
 % Refreezing
 %     T(z>hw,1) = Tair(cc);
 %     [~,dF,T,Vfrz] = refreeze(Mrminor_prev,T,z,hw,wet,dF,nx,x,dx,dt,C);
-%             time.Vfrz(cc) = Vfrz;
+ 	  [~,dF,Vfrz]   = refreeze_simple(Mrminor_prev,z,)
 
 
 

@@ -82,7 +82,7 @@ pp = 6;
 
 offs = offset(pp);
 % Ice surface
-plot([start offs+wall0(end)],[H H],'-k')
+%plot([start offs+wall0(end)],[H H],'-k')
 start = wall1(end)+offs;
 %
 % Calculate the change to the left moulin wall from all processes
@@ -102,7 +102,7 @@ plot(offs+wall0+chgL+0*chgL(end),time.z,'-k','linewidth',3)%,'color',pcs(pp,:))
 plot(offs+wall1+chgR-0*chgR(end),time.z,'-k','linewidth',3)%,'color','pcs(pp,:))
 %
 % Ice surface
-plot([offs+wall1(end) offs+2],[H H],'-k')
+%plot([offs+wall1(end) offs+2],[H H],'-k')
 
 
 % White ice background
@@ -130,7 +130,7 @@ for pp = 1:5
     % Moulin walls (beginning of timestep)
     plot(offs+[wall0 wall1],time.z,'-k')
     % Ice surface
-    plot([start offs+wall0(end)],[H H],'-k')
+    %plot([start offs+wall0(end)],[H H],'-k')
     start = wall1(end)+offs;
     %
     % Now plot the change to the moulin from this process
@@ -168,7 +168,7 @@ ylabel('Height above bed (m)')
 pp = 6;
 text(offset(pp),H+30,labs{pp},'color','k','fontweight','bold','fontsize',20,'horizontalalignment','center')
 
-
+box off
 %%
 figfile = sprintf('Figure1_ModelComponents_%s',date);
 savefig(strcat(figfile,'.fig'))
