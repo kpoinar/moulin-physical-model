@@ -37,6 +37,15 @@ save_timevariable =  true;
 
 save_location = './modeloutputs';
 datetime = datestr(now,'mm-dd-yyyy_HHMM'); %This will assign a unique date and time for both the figures and the model outputs
+
+% What type of open channel do you want to do?  
+%1 --> open channel parameterization
+%2 --> waterfall like parameterization
+%3 --> potential drop parameterization
+%=/1-3 --> no melting above the water line
+
+unfilled_melting = 1; 
+
 %% define some basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
@@ -163,6 +172,18 @@ time.parameters.L =L;
 time.parameters.R0 = R0;
 time.parameters.numofdays =  numofdays;
 time.parameters.f = f;
+
+if unfilled_melting ==1 
+    time.parameters.dOCtype = 'open channel melting parameterization';
+elseif unfilled_melting ==2
+    time.parameters.dOCtype = 'waterfall like melting parameterization';
+elseif unfilled_melting ==3 
+    time.parameters.dOCtype = 'potential drop melting parameterization';
+else 
+    time.parameters.dOCtype = 'no melting applied above waterline';
+end
+
+
 %% Set up initial figure
 
 % figure(3); clf;
@@ -239,7 +260,7 @@ for t = time.t
 % Refreezing
 %     T(z>hw,1) = Tair(cc);
 %     [~,dF,T,Vfrz] = refreeze(Mrminor_prev,T,z,hw,wet,dF,nx,x,dx,dt,C);
- 	  [~,dF,Vfrz]   = refreeze_simple(Mrminor_prev,z,)
+% 	  [~,dF,Vfrz]   = refreeze_simple(Mrminor_prev,z,)
 
 
 
@@ -257,9 +278,13 @@ for t = time.t
        %Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet);
 %        Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet, dt);
        time.Vadd_turb(cc) = Vadd_turb;
+   
+       
+       
        
 %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-   [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature, wet);
+if unfilled_melting == 1 %use the more complex (odd) waterfall like melting parameterization
+      [dOC, Vadd_oc] = openchannel(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature, wet);
   
    % Scale the open channel displacement down by 1/2 to reflect the
    % displacement at exactly the upstream point:
@@ -267,6 +292,48 @@ for t = time.t
    
    time.dOC(:,cc)  =  dOC;
    time.Vadd_oc(cc)    =  Vadd_oc;
+
+elseif unfilled_melting == 2
+    
+    
+   [dOC, Vadd_oc] = waterfall(hw, Qin(cc), M.r_minor, M.r_major, M.xu, dt, Ti, dz, z, relative_roughness_OC, Bathurst, include_ice_temperature, wet);
+
+   
+   
+   
+   
+
+   
+   % Scale the open channel displacement down by 1/2 to reflect the
+   % displacement at exactly the upstream point:
+   dOC = dOC / 2;
+   
+   time.dOC(:,cc)  =  dOC;
+   time.Vadd_oc(cc)    =  Vadd_oc;
+   
+elseif unfilled_melting ==3
+    
+    %%%%%%%%% dP: Expansion from gravitational potential energy above the water
+    %%%%%%%%% line
+    dOC = potentialdrop(Qin(cc),wet,Mrminor_prev,dt,C,f);
+    % The reason for calculating the above is to offset the elastic closure
+    % at the top of the moulin.  On its own, the moulin will close
+    % elastically after some days to months (depending on C.E).  We know
+    % that does not happen.  Hence, we add some turbulent "waterfall"
+    % melting above the water line.
+    time.dOC(:,cc) = dOC;
+    time.Vadd_oc   = 0;
+   
+   
+else  %if no value between 1-3 then there will be not melting above the water line
+    
+    %%%%%%%%% no melting above the water line%%%%%%%%% THIS IS A BAD CHOICE
+    %%%%%%%%%
+    time.dOC     = 0
+    time.Vadd_oc = 0;
+    
+end
+   
 
 %%%%%%%%% Vadd: Added water from melted ice into Qin
     % NOTE 2 MARCH 2020: This is a large amount of meltwater (~8 m2 per dt)
@@ -284,22 +351,28 @@ for t = time.t
     dE_major = elastic(Mrmajor_prev,stress,C);
         time.dE_major(:,cc) = dE_major;
 
-%%%%%%%%% dP: Expansion from gravitational potential energy above the water
-%%%%%%%%% line
-    dP = potentialdrop(Qin(cc),wet,Mrminor_prev,dt,C,f);
-    % The reason for calculating the above is to offset the elastic closure
-    % at the top of the moulin.  On its own, the moulin will close
-    % elastically after some days to months (depending on C.E).  We know
-    % that does not happen.  Hence, we add some turbulent "waterfall"
-    % melting above the water line.
-    time.dP(:,cc) = dP;
-        
-    
+ 
 %%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
     dG = deformGlen(H, T, alpha, z, n, dt, C);
     time.dG(:,cc) = dG;
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    %%%%%%%%LCA March 24 --> these need to change to reflect new dOC so
+    %%%%%%%%both the  xd and xu need to have dOC depending on the dOC
+    %%%%%%%%choices
+    %%%%%%%%parameterizations
     % Calculate the horizontal position of the moulin within the ice column
     M.xu = M.xu - dC_major - dE_major - dM + dG - dOC;% - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
                                 % Important Note: the +dG above is correct.
@@ -309,6 +382,13 @@ for t = time.t
                                 % The downstream wall also moves downstream
                                 % at the same rate, dG.
 
+                                
+                                
+                                
+                                
+                                
+                                
+                                
     % Shift them both back upstream so that the bed of the upstream wall
     % stays pinned at x = 0:
     x0 = M.xu(1);
