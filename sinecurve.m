@@ -24,14 +24,14 @@ Qfox = interp1((foxxtemp(:,1)-foxxtemp(1,1))*86400,foxxtemp(:,2),time.t);
 %Qsin = 5* cosd(tmptime);
 Qsin = 2.*cos((2*pi.*time.t./(86400)))+3;
 Qin2 = Qsin + cos((2*pi.*time.t./(86400*5)))+1;
-Qin3 = Qsin + 3*cos((pi.*time.t./(86400*3)))+3;
+Qin3 = 2.*cos((2*pi.*time.t./(86400))) + 3*cos((pi.*time.t./(86400*3)))+6;
 
 figure
 hold on
 plot(time.t(1:48*4), Qsin(1:48*4))
-plot(time.t(1:48*4), Qin2(1:48*4))
-plot(time.t(1:48*4), Qin3(1:48*4))
-plot(time.t(1:48*4), Qfox(1:48*4))
+% plot(time.t(1:48*4), Qin2(1:48*4))
+ plot(time.t(1:48*4), Qin3(1:48*4))
+% plot(time.t(1:48*4), Qfox(1:48*4))
 
 
 

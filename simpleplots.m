@@ -1,5 +1,5 @@
 % Lauren's plots for the moulin model
-function simpleplots(time, save_figures, savelocation,datetime, visible_figures)
+function simpleplots(time, save_figures, savelocation, visible_figures, numberinseries, savefile)
 
 %%
 timewindow = 1: (43200/time.dt) : (time.sec/time.dt);
@@ -19,7 +19,7 @@ end
 
 hold on
 set(gcf, 'position', [1          88        2000        1257])
-a = subtightplot(1,5,1)
+a = subtightplot(1,5,1);
 
 hold on
 title('Moulin geometry')
@@ -132,14 +132,9 @@ set(e, 'position', [0.782+0.024 0.1 0.172 0.85])
 end
 
 
-
- 
 if save_figures
   cd(savelocation)
-  tmp = datestr(now,'mm-dd-yyyy');
-  mkdir(tmp); 
-  cd(tmp);
-  filename = ['modelrun', '_R0-', num2str(time.parameters.R0), '_H-', num2str(time.parameters.H), '_', num2str(time.parameters.numofdays), 'd_',  datetime, '_geometry.png'];
+  filename = ['modelrun', num2str(numberinseries), '_R0-', num2str(time.parameters.R0), '_H-', num2str(time.parameters.H), '_', num2str(time.parameters.numofdays), 'd_',  savefile, '_geometry.png'];
   saveas(gcf, filename)
 end
 
@@ -172,6 +167,12 @@ ax(2) = subplot(2,1,2);
 xlabel('Time (days)', 'fontweight','bold')
 
 linkaxes(ax,'x');
+
+if save_figures
+  cd(savelocation)
+  filename = ['modelrun', num2str(numberinseries), '_R0-', num2str(time.parameters.R0), '_H-', num2str(time.parameters.H), '_', num2str(time.parameters.numofdays), 'd_',  savefile, '_timeseries.png'];
+  saveas(gcf, filename)
+end
 
 %%
 
@@ -223,10 +224,7 @@ hold on
 % 
 if save_figures
   cd(savelocation)
-  tmp = datestr(now,'mm-dd-yyyy');
-  mkdir(tmp); 
-  cd(tmp);
-  filename = ['modelrun', '_R0-', num2str(time.parameters.R0), '_H-', num2str(time.parameters.H), '_', num2str(time.parameters.numofdays), 'd_',  datetime, '_timeseries.png'];
+  filename = ['modelrun', num2str(numberinseries), '_R0-', num2str(time.parameters.R0), '_H-', num2str(time.parameters.H), '_', num2str(time.parameters.numofdays), 'd_',  savefile, '_final.png'];
   saveas(gcf, filename)
 end
 

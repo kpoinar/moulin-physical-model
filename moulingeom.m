@@ -49,7 +49,7 @@ unfilled_melting = 1;
 %% define some basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 1;             %set the number of days for the model run
+numofdays = 30;             %set the number of days for the model run
 H         = 800;            % ice thickness, meters
 R0        = 1;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
@@ -414,7 +414,7 @@ end
 %% figures
 
 if make_simple_plots
-    simpleplots(time, save_figures, save_location, datetime, visible_figures)
+    simpleplots(time, save_figures, save_location, datetime, visible_figures, 1)
 end
 
 %%
