@@ -49,7 +49,7 @@ unfilled_melting = 1;
 %% define some basic parameters
 C         = makeConstants;  %constants used for parameterizations 
 Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 30;             %set the number of days for the model run
+numofdays = 5;             %set the number of days for the model run
 H         = 800;            % ice thickness, meters
 R0        = 1;              % radius of moulin initially
 L         = 12e3;           % Length of the subglacial channel
@@ -425,7 +425,7 @@ if save_timevariable
   tmp = datestr(now,'mm-dd-yyyy');
   mkdir(tmp);
   cd(tmp);
-  filename = ['modelrun', '_R0-', num2str(R0), '_H-', num2str(H), '_', num2str(numofdays), 'd_',  datetime, '_outputs.mat']
+  filename = ['modelrun', '_R0-', num2str(R0), '_H-', num2str(H), '_', num2str(numofdays), 'd_',  datetime, '_outputs.mat'];
   save(filename, 'time')
   cd('../..')
 end 
