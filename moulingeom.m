@@ -213,8 +213,8 @@ end
 cc = 0;
 
 for t = time.t
+    cc = cc+1; %indice used to save arrays in time struct
     
-    cc = cc+1;
     % Consider using the previous moulin radius in all calculations in each
     % timestep, so that the final result is not dependent on the order in
     % which I do creep, refreeze, turbulent melt, elastic, etc.
@@ -222,16 +222,7 @@ for t = time.t
     Mrmajor_prev  = M.r_major;
     Mxuprev = M.xu;
     
-    % which nodes are underwater or at the water line (wet) versus above the water line?
-    wet = locatewater(hw,z);
-   
-    % Calculate hydrostatic pressures everywhere
-    % Ice hydrostatic stress (INWARD: Negative)
-    stress.cryo = -C.rhoi*C.g*(H-z);
-    % Water hydrostatic stress (OUTWARD: Positive)
-    stress.hydro = C.rhow*C.g*(hw-z);
-    stress.hydro(~wet) = 0; % Anywhere that is not wet does not have the opening force from water
-    
+
 %%%%%%%%%%
 % Subglacial Schoof model: Conduit size
     tspan = [t,t+dt];
@@ -245,8 +236,18 @@ for t = time.t
     time.hw(cc)   = hw;
     time.Qout(cc) = Qout;
     
+    
 
-
+%%%%%%%%%%%
+    % which nodes are underwater or at the water line (wet) versus above the water line?
+    wet = locatewater(hw,z);   
+    % Calculate hydrostatic pressures everywhere
+    % Ice hydrostatic stress (INWARD: Negative)
+    stress.cryo = -C.rhoi*C.g*(H-z);
+    % Water hydrostatic stress (OUTWARD: Positive)
+    stress.hydro = C.rhow*C.g*(hw-z);
+    stress.hydro(~wet) = 0; % Anywhere that is not wet does not have the opening force from water
+    
 
 %%%%%%%%% dC: Creep deformation
 %Creep deformation: do this first because it is a larger term  
