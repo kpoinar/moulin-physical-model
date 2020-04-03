@@ -225,7 +225,7 @@ for t = time.t
 
 %%%%%%%%%%
 % Subglacial Schoof model: Conduit size
-    tspan = [t,t+dt];
+    tspan = [0,dt];
     y0 = [hw, S];
             %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
     opt = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
