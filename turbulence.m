@@ -1,4 +1,4 @@
-function [dM, uw, Vadd] =turbulence(hw, Qout, Mrminor, Mrmajor, Mxd, Ms, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature)
+function [dM, uw, Vadd] =turbulence(Qout, Ms, Mp, Dh, Rh, Mxd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature)
 
 
 %
@@ -34,7 +34,7 @@ ks = relative_roughness;
 
 % waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
 % waterpresent(waterpresent<0) =0;
-%S = (pi .* Mrminor .*Mrmajor); (CT) replace this by an S_m input for the
+%S = (pi .* Mrminor .*Mrmajor); (CT) replace this by an Ms input for the
 %moulin cross-section area
 uw = Qout ./  Ms; %calculate the water velocity in each node 
 % uw(waterpresent ==0) =0; % if there is no water in a given cell,
@@ -51,10 +51,11 @@ end
 
 uw = min(uw,9.3);
 % ------------------------------
-
-Mp   = pi.* (3 .*(Mrminor + Mrmajor) - sqrt((3.* Mrminor + Mrmajor) .* (Mrminor +3 .* Mrmajor))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
-Dh   = (4.*(pi .* Mrminor .* Mrmajor)) ./ Mp; %hydrualic diameter
-Rh   = (pi.* Mrminor .* Mrmajor) ./ Mp; % hydraulic radius
+%(CT) moved Mp, Dh, Rh and Ms out of the function to the main code to the
+%main code
+%Mp   = pi.* (3 .*(Mrminor + Mrmajor) - sqrt((3.* Mrminor + Mrmajor) .* (Mrminor +3 .* Mrmajor))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
+%Dh   = (4.*(pi .* Mrminor .* Mrmajor)) ./ Mp; %hydrualic diameter
+%Rh   = (pi.* Mrminor .* Mrmajor) ./ Mp; % hydraulic radius
     % flag if the ks/dh ratio is less than 0.05
     % if (ks/Dh) < 0.05
     %     disp('ks/dh < 0.05')

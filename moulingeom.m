@@ -222,8 +222,11 @@ for t = time.t
     Mrmajor_prev  = M.r_major;
     Mxuprev = M.xu;
     
-    %calculate moulin cross-section area
-    Ms = (pi .* M.r_minor .*M.r_major);
+    %calculate moulin parameters
+    Ms = (pi .* M.r_minor .*M.r_major); %moulin cross-section area
+    Mp   = pi.* (3 .*(M.r_minor + M.r_major) - sqrt((3.* M.r_minor + M.r_major) .* (M.r_minor +3 .* M.r_major))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
+    Dh   = (4.*(pi .* M.r_minor .* M.r_major)) ./ Mp; %hydrualic diameter
+    Rh   = (pi.* M.r_minor .* M.r_major) ./ Mp; % hydraulic radius
     
 
 %%%%%%%%%%
@@ -270,7 +273,7 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-   [dM, uw, Vadd_turb] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, Ms, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature);
+   [dM, uw, Vadd_turb] = turbulence(Qout, Ms, Mp, Dh, Rh, M.xd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature);
        time.dM(:,cc)  =  dM;
        time.uw(:,cc)  =  uw;
       % time.V(cc)  = Vadd;
