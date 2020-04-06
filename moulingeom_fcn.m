@@ -291,7 +291,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
             dOC = potentialdrop(Qin(cc),wet,Mrminor_prev,dt,C,f);
             % The reason for calculating the above is to offset the elastic closure
             % at the top of the moulin.  On its own, the moulin will close
-            % elastically after some days to months (depending on C.E).  We know
+            % elastically after some days to months (depending on C.Y).  We know
             % that does not happen.  Hence, we add some turbulent "waterfall"
             % melting above the water line.
             time.dOC(:,cc) = dOC;

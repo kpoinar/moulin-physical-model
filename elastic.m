@@ -25,5 +25,5 @@ function dr = elastic(Mr,stress,C)
     % Without a/E prefactor:
     dr = (1 + C.nu)*(P - 0.5*(stress.sigx+stress.sigy)) + 0.25 * (stress.sigx-stress.sigy)*(1 - 3*C.nu - 4*C.nu^2) + 0.25 * stress.tauxy * (2 - 3*C.nu - 8*C.nu^2);
     % Radial deformation (moulin radius a or Mr):
-    dr = dr .* Mr / C.E;  % meters
+    dr = dr .* Mr / C.Y;  % meters
     

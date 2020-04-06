@@ -7,7 +7,7 @@ C.ki = 2.1;    % J/mKs
 C.cp = 2115;   % J/kgK
 C.Lf = 335000; % J/kg; Latent heat of fusion
 C.g = 9.8;     % m/s2; Gravity
-C.E = 1e9;     % Pa; Young's elastic modulus (Vaughan 1995)
+C.Y = 1e9;     % Pa; Young's elastic modulus (Vaughan 1995)
 C.A = (8e-24);   % 1/Pa3/s; 6e-24 Glen's law fluidity coefficient (Schoof 2010)
 C.f = 0.1;     % unitless; Darcy-Weisbach friction factor (0.1 in Matt's code, 0.0375 in Schoof 2010)
 C.n = 3;        % unitless; Glen's law exponent (Schoof 2010)
@@ -22,7 +22,7 @@ C.c2 = 2*C.A*C.n^(-C.n); % units; Closure parameter (Schoof 2010)
 C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/ sqrt(C.rhow*C.f);
 
 
-%C.E = 1e12;
+%C.Y = 1e12;
 
 
 

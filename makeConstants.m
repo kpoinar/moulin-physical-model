@@ -7,7 +7,7 @@ C.ki = 2.1;    % J/mKs; Thermal conductivity of ice
 C.cp = 2115;   % J/kgK Specific heat capacity of ice
 C.Lf = 335000; % J/kg; Latent heat of fusion
 C.g = 9.8;     % m/s2; Gravity
-C.E = 5e9;     % Pa; Young's elastic modulus (Vaughan 1995)
+C.Y = 5e9;     % Pa; Young's elastic modulus (Vaughan 1995)
 C.A = (6e-24);   % 1/Pa3/s; 6e-24 Glen's law fluidity coefficient (Schoof 2010)
 C.f = 0.15;     % unitless; Darcy-Weisbach friction factor (0.1 in Matt's code, 0.0375 in Schoof 2010)
 C.n = 3;        % unitless; Glen's law exponent (Schoof 2010)
@@ -21,7 +21,7 @@ C.c3 = 2^(1/4) * (pi+2)^(1/2) / (pi^(1/4) * (C.rhow*C.f)^(1/2)); % units; Flux p
 % for a semi-circular conduit, modified from Schoof whose equation appears to be incorrect. 
 C.c3 = ( 2.^(5./4) ./pi.^(1./4.) .* sqrt(pi./(pi + 2)) )/sqrt(C.rhow*C.f); % Corrected by LCA
 
-%C.E = 1e12;
+%C.Y = 1e12;
 
 C.kappa = C.ki /(C.rhoi * C.cp); % (m2/s) Thermal diffusivity (Should always be around 1e-6, whatever the material)
 C.nu = 0.3;    % []; Poissons ratio for ice
