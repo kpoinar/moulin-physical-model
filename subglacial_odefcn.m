@@ -1,4 +1,4 @@
-function dydt = subglacial_odefcn(t,y,Mr,z,Qin,H,dx,C)
+function dydt = subglacial_odefcn(t,y,Mr,z,Qin,H,L,C)
 
 %{ 
 This function is based on Schoof 2010, without the cavity. 
@@ -40,7 +40,7 @@ A_R = pi .* Mr_z.^2;
 %Recharge in moulin in function of time
 %
 %Head partial differential equation --- dhdt
-dydt(1) = 1./A_R .* ( Qin - C.c3.*S.^(5/4) .* sqrt(Pw./dx) );
+dydt(1) = 1./A_R .* ( Qin - C.c3.*S.^(5/4) .* sqrt(Pw./L) );
 %Channel cross section area partial differential equation --- dSdt
-dydt(2) = C.c1 .* C.c3 * S.^(5./4) .* (Pw./dx).^(3./2) ...
+dydt(2) = C.c1 .* C.c3 * S.^(5./4) .* (Pw./L).^(3./2) ...
          - C.c2 .* ( Pi - Pw ).^C.n .* S;

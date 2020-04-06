@@ -40,9 +40,9 @@ be the equivalent in matlab.
 
 %Using ode15s deals with the equation stiffness problem
 
-[t,y] = ode15s(@(t,y) subglacial_odefcn(t,y,Mr,z,Qin,H,dx,C), tspan, y0, opt); %testing to see if a stiff solver will deal with the timesteping issues
+[t,y] = ode15s(@(t,y) subglacial_odefcn(t,y,Mr,z,Qin,H,L,C), tspan, y0, opt); %testing to see if a stiff solver will deal with the timesteping issues
 
 hw = y(end,1); % moulin head (m)
 S = y(end,2); % channel cross-section area
-Qout = C.c3 .* S.^(5/4) .* sqrt( C.rhow*C.g*hw/dx); % discharge out the channel
+Qout = C.c3 .* S.^(5/4) .* sqrt( C.rhow*C.g*hw/L); % discharge out the channel
 
