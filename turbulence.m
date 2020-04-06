@@ -1,4 +1,4 @@
-function [dM, uw, Vadd] =turbulence(hw, Qout, Mrminor, Mrmajor, Mxd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature)
+function [dM, uw, Vadd] =turbulence(hw, Qout, Mrminor, Mrmajor, Mxd, Ms, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature)
 
 
 %
@@ -8,7 +8,7 @@ function [dM, uw, Vadd] =turbulence(hw, Qout, Mrminor, Mrmajor, Mxd, dt, Ti, dz,
 %inputs from the moulin model
 %hw   = height of the water in the moulin (m)
 %Qout = discharge of water into the subglacial system (m3/s)
-%Mr   = current moulin radius (m)
+%Ms   = current moulin cross-section area (m^2) replace Mr (changed by CT)
 %dt   = timestep 
 %Ti   = ice temperature 
 %z    = elevation of each model node 0 = bottom of moulin; H= z(top of
@@ -34,8 +34,9 @@ ks = relative_roughness;
 
 % waterpresent = hw - z; %logical matrix to determine in what nodes water is present 
 % waterpresent(waterpresent<0) =0;
-S = (pi .* Mrminor .*Mrmajor);
-uw = Qout ./  S; %calculate the water velocity in each node 
+%S = (pi .* Mrminor .*Mrmajor); (CT) replace this by an S_m input for the
+%moulin cross-section area
+uw = Qout ./  Ms; %calculate the water velocity in each node 
 % uw(waterpresent ==0) =0; % if there is no water in a given cell,
 uw(~wet) = 0; % if there is no water in a given cell, there is no water velocity
 

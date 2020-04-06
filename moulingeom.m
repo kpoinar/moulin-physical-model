@@ -222,6 +222,9 @@ for t = time.t
     Mrmajor_prev  = M.r_major;
     Mxuprev = M.xu;
     
+    %calculate moulin cross-section area
+    Ms = (pi .* M.r_minor .*M.r_major);
+    
 
 %%%%%%%%%%
 % Subglacial Schoof model: Conduit size
@@ -267,7 +270,7 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-   [dM, uw, Vadd_turb] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature);
+   [dM, uw, Vadd_turb] = turbulence(hw, Qout, Mrminor_prev,Mrmajor_prev, M.xd, Ms, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature);
        time.dM(:,cc)  =  dM;
        time.uw(:,cc)  =  uw;
       % time.V(cc)  = Vadd;

@@ -1,6 +1,6 @@
 %function [t,hw,S,Qout] = subglacialsc(Mr,z,Qin,H,dx,C,tspan,y0) %for
 %TestSubglacial.m
-function [hw,S,Qout, Vadd_sg] = subglacialsc(Mr,z,Qin,H,dx,C,tspan,y0, opt)
+function [hw,S,Qout, Vadd_sg] = subglacialsc(Ms,z,Qin,H,L,C,tspan,y0, opt)
 % import constants
 %C = makeConstants;
 
@@ -40,7 +40,7 @@ be the equivalent in matlab.
 
 %Using ode15s deals with the equation stiffness problem
 
-[t,y] = ode15s(@(t,y) subglacial_odefcn(t,y,Mr,z,Qin,H,L,C), tspan, y0, opt); %testing to see if a stiff solver will deal with the timesteping issues
+[t,y] = ode15s(@(t,y) subglacial_odefcn(t,y,Ms,z,Qin,H,L,C), tspan, y0, opt); %testing to see if a stiff solver will deal with the timesteping issues
 
 hw = y(end,1); % moulin head (m)
 S = y(end,2); % channel cross-section area
