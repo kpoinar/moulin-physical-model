@@ -116,7 +116,7 @@ time.icetemp = Tfar; %just save in the time file for reference
 %hw      = zeros(1,length(time.t));
 hwint   = H ; %set the inital water level as 
 %hw(1)   = hwint;
-Mrmin   = 1e-9;  % 1 mm
+Mrmin   = 1e-9;  % needs to be smaller than a cm
 M.r     = R0*ones(size(z));
 
 %create a non cylinderical initial radius
