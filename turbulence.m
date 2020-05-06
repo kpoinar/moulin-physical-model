@@ -1,4 +1,4 @@
-function [dM, uw, Vadd] =turbulence(Qout, Ms, Mp, Dh, Rh, Mxd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature)
+function [dM, uw, Vadd] =turbulence(Qout, Ms, Mp, Dh, Rh, Mxd, dt, Ti, dz, z, wet, include_ice_temperature, fR_wet_variable, relative_roughness_wet,   fR_wet_fixed)
 
 
 %
@@ -20,7 +20,7 @@ function [dM, uw, Vadd] =turbulence(Qout, Ms, Mp, Dh, Rh, Mxd, dt, Ti, dz, z, we
 
 
 C = makeConstants;
-ks = relative_roughness;
+
 
 %exports
 %dM  = change in moulin radius due to melting (m)
@@ -64,20 +64,22 @@ uw = min(uw,9.3);
 
 % ------------------------------    
 % calculate the pressure melting temperature of ice/water %https://glaciers.gi.alaska.edu/sites/default/files/mccarthy/Notes_thermodyn_Aschwanden.pdf
-Pw   = C.rhow .* C.g .* wet;
-Tmw  =  273.16 - 9.8e-8.*(Pw - 611.73);  
+Pw   = C.rhow .* C.g .* (z(find(wet,1,'last'))-z) .* wet;
+Tmw  = C.T0 - 9.8e-8.*(Pw - 611.73).* wet;  
 
 
 % select the appropriate parameterization of DW friction factor
-if Bathurst
-    fR =10* 1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %#ok<UNRCH> %Bathurst parameterization for DW friction factor
+if fR_wet_variable
+    ks = relative_roughness_wet;
+    fR =1./((-1.987.* log10(ks./(5.15.*Rh))).^2); %#ok<UNRCH> %Bathurst parameterization for DW friction factor
+    %fR = (1./(-2.*log10((ks./Dh)./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
 else
-    fR = (1./(-2.*log10((ks./Dh)./3.7))).^2; %#ok<UNRCH> %Colebrook-White parameterization for DW friction factor
+    fR = fR_wet_fixed;
     %fR(:,ii) = 0.01;
 end
 
-fR =1;
 
+  
 % calculate the lengthscale over which head loss is determined...
 % this is simply the length of the model grid cells unless they become
 % non-uniform

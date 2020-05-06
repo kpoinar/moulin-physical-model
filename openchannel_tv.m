@@ -1,5 +1,4 @@
-function [dOC, Vadd_oc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, wet, include_ice_temperature,   fR_oc_variable, relative_roughness_OC,  fR_oc_fixed)
-%function [dOC, Vadd_oc, hL, dL, fR, neg2, Rh] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, wet, include_ice_temperature,   fR_oc_variable, relative_roughness_OC,  fR_oc_fixed)
+function [dOC, Vadd_oc, hL, dL, fR, neg2, Rh, cres_area, Mp] = openchannel_tv(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, wet, include_ice_temperature,   fR_oc_variable, relative_roughness_OC,  fR_oc_fixed)
 
 
 % so the hydrualic radius will be calculated as the perimeter of 1/2 an
@@ -69,35 +68,23 @@ neg(neg>=0)=1;
  %dL = dz;% 
  dL = sqrt(dL.^2 + dz.^2);
 
+%%%%%% make the assumption that the terminal velocity is reached
+%%%%%% immediately
+
+term_vel = 9; 
  
-     % Find out where dL is zero. We'll need to replace these indices.
+% from the terminal velocity and Qin calculate the area of a cresent 
+cres_area = Qin ./ term_vel; 
      
-     %dL = max(dL,0);  % protect against negative dL
-     
+% wetted perimeter is still 1/2 that of an ellipse
+[Mp, ~] = ellipseperimeter(Mr_minor, Mr_major);
+Mp = Mp/2;
 
-%dL = 1;
 
 
-     %The length over which the headloss occurs 
-     %%%%%%%%%%%%%% 
-     
-     
 
-%%%%%%%%%%%%% calculate the wetted perimeter, hydraulic diameter, and hydraulic radius 
-
-% % For calculations using a semi-ellipse
-% [Mp, area_ell] = ellipseperimeter(Mr_minor, Mr_major);
-% Mp = Mp/2; %to get a semiellipse...
-% area_ell = area_ell/2; %to get a semiellipse...
-% 
-
-% For the calculations using a semicircle
-%Mr_major = Mr_major/2; %This is just 
-area_ell = pi .* Mr_major.^2;
-Mp       = 2 .* pi .* Mr_major;
-
-Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
-Rh   = area_ell ./ Mp; % hydraulic radius
+Dh   = (4 .* cres_area) ./ Mp; %hydraulic diameter
+Rh   = cres_area ./ Mp; % hydraulic radius
 
 %%%%%%%%%%%%% The water temperature is assumed to be zero because it is not,
 % technically, under pressure of the water above it
@@ -128,10 +115,9 @@ Tmw  =  273.15;
 
 
 %%%%%%%%%%%%%% expected headloss based on the discharge
-%uw = (2.* dz .* Dh .* C.g)/ (fR .* dL) .^(1/3); 
-hL = (((Qin./area_ell).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
-%hL = (((9).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
-%hL = 1;
+
+hL = (((term_vel).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
+
 %%%%%%%%%%%%% calculate the expected melt 
 if include_ice_temperature
     dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ...
@@ -151,13 +137,18 @@ end
 % Make sure that there is no melting in places without water
 dOC_dt(wet) = 0;
 
-dOC  = dOC_dt .* dt .*neg;%change in radius over the given time step and zero out melting if there is a negative slope
+dOC  = dOC_dt .* dt;%change in radius over the given time step
 
 
 
+%OC fix 1 (lca 4/23):  Smooth it over a 10 meter reach
+% nsm = round(10/ 1);
+% dOC = fastsmooth(dOC,nsm,3,1);
+% 
 
 
-
+% % Replace anywhere with dL=0 with the potential drop:
+%   dP = 0.5 * C.rhow / C.rhoi *C.g / C.Lf * Qin*dt ./ (2*pi*Mr_major);
   
 %this should zero out melting if there is a negative slope
 dOC = dOC.*neg;

@@ -48,25 +48,25 @@ unfilled_melting = 1;
 
 %% define some basic parameters
 C         = makeConstants;  %constants used for parameterizations 
-Tdatatype = 'Ryser_foxx';   %ice temperature profile to extrapolate from
-numofdays = 5;             %set the number of days for the model run
-H         = 800;            % ice thickness, meters
-R0        = 1;              % radius of moulin initially
-L         = 12e3;           % Length of the subglacial channel
+Tdatatype = 'Ryser_foxx';%'IkenB';%'Ryser_foxx';   %ice temperature profile to extrapolate from
+numofdays = 30;             %set the number of days for the model run
+H         = 1000;            % ice thickness, meters
+R0        = 2;              % radius of moulin initially
+L         = 10e3;           % Length of the subglacial channel
 f         = 0.05;           % fraction of the potential energy used to open the top of the moulin (above water level)
-alpha     = 0.03;           % regional surface slope (unitless), for use in Glen's Flow Law
+alpha     = 0.01;           % regional surface slope (unitless), for use in Glen's Flow Law
 n         = 3;              % flow law exponent (Glen's Flow Law)
 
 %inital guesses for subglacial model
 hw(1) = H;                  % moulin water level (m)
-S(1)  = 1.5*R0;                 % subglacial channel cross sectional area (m^2)
+S(1)  = 1.25;                 % subglacial channel cross sectional area (m^2)
 
 
 chebx     = 0;              % chebx=1 is not working yet
 nt        = 1000;           % plot every nt timesteps
 % artesian  = 1;              % allow moulin to shed water?
 % Qscale    = 1;              % factor to scale FOXX runoff by
-E         = 5;             % enhancement factor for creep
+E         = 3;             % enhancement factor for creep
 
 % HFdoy     = 99999999999999;%  % Prescribe an annual date of hydrofracture?  # if yes. Really high # if no.   165; % Mid June
 %% set the vertical model components
@@ -99,12 +99,13 @@ Qin     = interp1(Qcos2(:,1), Qcos2(:,3), time.t, 'spline', 'extrap'); % run an 
 % Quasi real/random input:
 Qin     = interp1(Qcos2(:,1), Qcos2(:,5), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
 Qin     = Qin*0.8 +3; %scale Qin to deal with a few model issues
+%Qin = 0*Qin + 3;
 time.Qin = Qin;  %save for future plotting
 clear Qcos2
 
 %% set Ice temperature characteristics 
 
-Tfar    = importTz('Ryser_foxx',z); % Kelvin
+Tfar    = importTz(Tdatatype,z); % Kelvin
 xmax    = 30;% 80; % meters; how far away from moulin to use as infinity
 [x,dx,nx]...
         = setupx(dt,chebx,xmax,C);
@@ -116,7 +117,7 @@ time.icetemp = Tfar; %just save in the time file for reference
 %hw      = zeros(1,length(time.t));
 hwint   = H ; %set the inital water level as 
 %hw(1)   = hwint;
-Mrmin   = 1e-9;  % needs to be smaller than a cm
+Mrmin   = 1e-9;  % 1 mm
 M.r     = R0*ones(size(z));
 
 %create a non cylinderical initial radius
@@ -136,7 +137,7 @@ M.xd = M.xd - x0;
 
 %% Set turbulence parameters
 
-relative_roughness = 0.2; %increasing this value increases the amount of melting due to turbulence.
+relative_roughness = 1;%0.2; %increasing this value increases the amount of melting due to turbulence.
 relative_roughness_OC = 1e-9;%1e-12;  % This one modifies the melt from open channel flow.
 
 include_ice_temperature = true; %true means that the change in the ice temperature is included in...
@@ -273,7 +274,7 @@ for t = time.t
 
 %%%%%%%%% dM: Turbulent melting
 % Turbulent melting: 
-   [dM, uw, Vadd_turb] = turbulence(Qout, Ms, Mp, Dh, Rh, M.xd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature);
+   [dM, uw, Vadd_turb] = turbulence(Qout, Ms, Mp, Dh, Rh, M.xd, dt, Ti, dz, z, wet, relative_roughness, Bathurst, include_ice_temperature,0,1);
        time.dM(:,cc)  =  dM;
        time.uw(:,cc)  =  uw;
       % time.V(cc)  = Vadd;
@@ -336,7 +337,7 @@ else  %if no value between 1-3 then there will be not melting above the water li
     
     %%%%%%%%% no melting above the water line%%%%%%%%% THIS IS A BAD CHOICE
     %%%%%%%%%
-    time.dOC     = 0
+    time.dOC     = 0;
     time.Vadd_oc = 0;
     
 end
