@@ -10,6 +10,12 @@ switch Tdatatype
         Luthi.Tsmooth = fastsmooth(interp1(Luthi.zeta,Luthi.T,Luthi.zetanew),10,3,1);
         Tz = interp1(linspace(1,0,100),Luthi.Tsmooth,z/H);
         %
+    case 'IkenB'
+        % Use Site B borehole
+        load fielddata/IkenB.mat
+        % Interpolate
+        Tz = interp1(IkenB.zetamodel,IkenB.Tmodel,z/H);
+        %
     case 'Temperate'
         % Temperate ice (no refreezing)
         Tz = C.T0*ones(size(z));
