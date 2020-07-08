@@ -27,18 +27,24 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     
     %% define some basic parameters
     C         = makeConstants;  %constants used for parameterizations  %if there is a particular value we want to change gradually, 
-    if exist('modelinputs.A_value', 'var')
+    if isfield(modelinputs,'A_value')%, 'var')
         C.A = modelinputs.A_value; 
+        C.c2 = 1*C.A*C.n^(-C.n); % Need to recalculate the closure parameter (Schoof 2010) with the new A
     end
     
-    if exist('modelinputs.f_sub', 'var')
+    if isfield(modelinputs,'ShearModulus')%, 'var')
+        C.Y = modelinputs.ShearModulus; 
+    end
+    
+    if isfield(modelinputs,'f_sub')%, 'var')
         C.f = modelinputs.f_sub;
     end
     
     Tdatatype = modelinputs.Tdatatype{1}; %'Ryser_foxx';   %ice temperature profile to extrapolate from
     numofdays = modelinputs.numofdays; % 3  %set the number of days for the model run
     H         = modelinputs.H;         % 800   % ice thickness, meters
-    R0        = modelinputs.R0;        % 1       % radius of moulin initially
+    R0        = modelinputs.R0;        % 2 m   % radius @bed of moulin initially
+    Rtop      = modelinputs.Rtop;      % 0.5 m % radius @sfc of moulin initially
     L         = modelinputs.L;         % L  % Length of the subglacial channel
     f         = modelinputs.fract_pd_melting;         %f   % fraction of the potential energy used to open the top of the moulin (above water level)
     alpha     = modelinputs.alpha;     % 0.03      % regional surface slope (unitless), for use in Glen's Flow Law
@@ -46,7 +52,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     
     %inital guesses for subglacial model
     hw(1) = H;                  % moulin water level (m)
-    S(1)  = 1.5*R0;%1.5* R0;                 % subglacial channel cross sectional area (m^2)
+    S(1)  = R0;%1.5* R0;                 % subglacial channel cross sectional area (m^2)
     chebx     = 0;              % chebx=1 is not working yet
     E         = modelinputs.E; %5;             % enhancement factor for creep
     
@@ -66,17 +72,57 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     % Qin = double(Tair>C.To) .* (Tair-C.To)*const;
     % Qin = zeros(size(time.t));
     % Use predetermined Qins of various types
-    load(modelinputs.Qinfile{1}) %1 = time, 2 cosine function, 3
-    Qin     = interp1(Q(:,1), Q(:,modelinputs.Qintype), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
-    %not sure if we should really have this... might require an adjustment
-    %in the qin values
-    %Qin     = Qin*modelinputs.Qinmultiplier1 +modelinputs.Qinmultiplier2; %scale Qin to deal with a few model issues   
-    % Normalize Qin
-    Qin = (Qin - mean(Qin)) / range(Qin);
-    % Rescale using user-defined Qin parameters
-    Qin = max(0.1, Qin * modelinputs.Qinrange + modelinputs.Qinbase);
-    time.Qin = Qin;  %save for future plotting
-    clear Q
+    qinreal = modelinputs.Qinreal;
+    
+    if qinreal 
+        load(modelinputs.Qinfile{1}) %1 = time, 2 cosine function, 3
+        Q(:,1) = Q2.(modelinputs.Qin_year{1}).time_seconds;
+        Q(:,2) = modelinputs.Qin_dampen .* Q2.(modelinputs.Qin_year{1}).(modelinputs.Qin_basin{1});
+        Qin     = interp1(Q(:,1), Q(:,2), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+        
+        %apply a smoothing to Qin to dampen diurnal varibility
+        Qin = max(0.1, Qin);
+        Qin = smooth(Qin, modelinputs.Qin_smoothval);
+        time.Qin = Qin;  %save for future plotting
+        clear Q
+        
+        % apply a base flow only to the subglacial system - this kind of
+        % mimics a number of processes
+        load(modelinputs.Qinfile{1});
+        baseflow  =  Q2.(modelinputs.Qin_year{1}).(modelinputs.Qin_baseflow{1});
+
+        Qbase  = 3.* interp1(baseflow(:,1), baseflow(:,2), time.t, 'spline', 'extrap'); 
+        Qbase = Qbase';
+        time.Qbase = Qbase;
+        clear Qbase_subglacial baseflow
+        
+        Qin = Qin + Qbase;
+        time.Qin = Qin + Qbase;
+        
+    else 
+        load(modelinputs.Qinfile{1}) %1 = time, 2 cosine function, 3
+        Qin     = interp1(Q(:,1), Q(:,modelinputs.Qintype), time.t, 'spline', 'extrap'); % run an interp just in case the timeframe changes
+        %not sure if we should really have this... might require an adjustment
+        %in the qin values
+        %Qin     = Qin*modelinputs.Qinmultiplier1 +modelinputs.Qinmultiplier2; %scale Qin to deal with a few model issues
+        % Normalize Qin
+        Qin = (Qin - mean(Qin)) / range(Qin);
+        % Rescale using user-defined Qin parameters
+        Qin = max(0.1, Qin * modelinputs.Qinrange + modelinputs.Qinbase);
+        time.Qin = Qin;  %save for future plotting
+        clear Q 
+        
+        Qbase = time.t .* 0 ; %apply zero baseflow to the subglacial model
+        
+    end
+    
+figure
+hold on 
+
+plot(time.t, Qin)
+%yyaxis right 
+
+
     
     %% set Ice temperature characteristics
     
@@ -88,8 +134,13 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     time.icetemp = Tfar; %just save in the time file for reference
     %% define initial moulin characteristics
     Mrmin   = 1e-9;  % 1 mm
-    M.r_minor = R0*ones(size(z)); %To use this, the moulin should be filled
-    M.r_major = R0*ones(size(z)); %To use this, the moulin should be filled
+%     M.r_minor = R0*ones(size(z)); %To use this, the moulin should be filled
+%     M.r_major = R0*ones(size(z)); %To use this, the moulin should be filled
+    M.r_minor = linspace(R0,Rtop,length(z))'; % Start as a "tree" moulin with 
+    M.r_major = M.r_minor;                   % R= R0 at the bottom and R= 0.1 m at the top
+                                        % The geom at top can only
+                                        % grow (open channel), never
+                                        % shrink (no stresses).
     
     % initalize the horizontal coordinate system
     %This assumes that ice flow is from left to right
@@ -130,9 +181,9 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     % valid when roughness height ./ hydrualic diameter < 0.05
     
     %% Assign elastic deformation parameters
-    stress.sigx = -50e3;  % compressive
-    stress.sigy = -50e3;  % compressive
-    stress.tauxy = 100e3; % shear opening
+    stress.sigx = modelinputs.sigx;
+    stress.sigy = modelinputs.sigy;
+    stress.tauxy = modelinputs.tauxy;
     
     %% save general parameters in time file
     time.parameters.stress = stress;
@@ -162,7 +213,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     for t = time.t
         
         cc = cc+1;
-        if ~mod(cc,1000), fprintf('timestep = %d of %d (%1.0f%%) after %1.1f minutes \n', cc,nt,cc/nt*100,toc/60); end
+        if ~mod(cc,100), fprintf('timestep %d of %d (%1.0f%%) after %1.1f minutes \n', cc,nt,cc/nt*100,toc/60); end
         % Consider using the previous moulin radius in all calculations in each
         % timestep, so that the final result is not dependent on the order in
         % which I do creep, refreeze, turbulent melt, elastic, etc.
@@ -174,7 +225,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         %%%%%%%%%%
         %calculate moulin parameters
         Ms   = (pi .* Mrminor_prev .*Mrmajor_prev); %moulin cross-section area
-        Mp   = pi.* (3 .*(Mrminor_prev + Mrmajor_prev) - sqrt((3.* Mrminor_prev + Mrmajor_prev) .* (Mrminor_prev +3 .* Mrmajor_prev))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
+        Mp   = eggperimeter(Mrminor_prev, Mrmajor_prev);   %pi.* (3 .*(Mrminor_prev + Mrmajor_prev) - sqrt((3.* Mrminor_prev + Mrmajor_prev) .* (Mrminor_prev +3 .* Mrmajor_prev))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
         Dh   = (4.*(pi .* Mrminor_prev .* Mrmajor_prev)) ./ Mp; %hydrualic diameter
         Rh   = (pi.* Mrminor_prev .* Mrmajor_prev) ./ Mp; % hydraulic radius
         
@@ -187,12 +238,17 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
         opt   = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
         %Qin_tot       = Qin(cc) + time.V
-        [hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
-        
+       
+        %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z, Qin_subbase(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
+        [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z, Qin(cc),H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
+            %the first term in the function had been MrMinor_prev, which
+            %actually is the radius, not the cross-sectional area, LCA
+            %fixed on 6/7/20
+
             time.S(cc)    = S;
             time.hw(cc)   = hw;
-            time.Qout(cc) = Qout;
-        
+            time.Qout(cc) = Qout ;% - Qbase(cc); %this removes the baseflow from the Qout
+            time.dydt_out(cc) = dydt_out;
         
         %%%%%%%%%%%
         % which nodes are underwater or at the water line (wet) versus above the water line?

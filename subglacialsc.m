@@ -1,6 +1,6 @@
 %function [t,hw,S,Qout] = subglacialsc(Mr,z,Qin,H,dx,C,tspan,y0) %for
 %TestSubglacial.m
-function [hw,S,Qout, Vadd_sg] = subglacialsc(Ms,z,Qin,H,L,C,tspan,y0, opt)
+function [hw,S,Qout, dydt_out] = subglacialsc(Ms,z,Qin,H,L,C,dt, tspan,y0, opt)
 % import constants
 %C = makeConstants;
 
@@ -42,7 +42,27 @@ be the equivalent in matlab.
 
 [t,y] = ode15s(@(t,y) subglacial_odefcn(t,y,Ms,z,Qin,H,L,C), tspan, y0, opt); %testing to see if a stiff solver will deal with the timesteping issues
 
+%tic, ode15s(@(t,y) subglacial_odefcn(t,y,Ms,z,Qin,H,L,C), tspan, y0, opt), toc %testing to see if a stiff solver will deal with the timesteping issues
+
+
 hw = y(end,1); % moulin head (m)
 S = y(end,2); % channel cross-section area
+dydt_out = NaN;
+
+if hw == y0(1)
+
+
+
+Pw =  C.rhow .* C.g .* hw;
+Pi = C.rhoi .* C.g .* H;
+    
+dydt_out = C.c1 .* C.c3 * S.^(5./4) .* (Pw./L).^(3./2) ...
+         - C.c2 .* ( Pi - Pw ).^C.n .* S;
+
+
+ S = S + dydt_out*dt;
+
+end
+
 Qout = C.c3 .* S.^(5/4) .* sqrt( C.rhow*C.g*hw/L); % discharge out the channel
 
