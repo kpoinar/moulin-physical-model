@@ -3,6 +3,8 @@ The model is physically based and simulates the vertical shape of a moulin over 
 
 MouSh accepts a water input at the top of the moulin and discharges a water output through the bottom through a subglacial channel.  At each timestep, the shape of the moulin is calculated as a function of viscous deformation, elastic deformation, turbulent energy dissipation through melting, and refreezing.  At each timestep, the water level, cross-sectional area of the subglacial channel, and discharge is calculated using the popular Schoof (2010) equations.
 
+https://www.urbandictionary.com/define.php?term=moush
+
 ## Main file is call_moulingeom_series_H.m
 We should give this a better name.
 
