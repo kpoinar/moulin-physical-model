@@ -224,12 +224,10 @@ plot(time.t, Qin)
         
         %%%%%%%%%%
         %calculate moulin parameters
-        Ms   = (pi .* Mrminor_prev .*Mrmajor_prev); %moulin cross-section area
+        Ms   = 0.5 * (pi .* Mrminor_prev .*Mrmajor_prev) + 0.5 * (pi .* Mrminor_prev.^2); %moulin cross-section area
         Mp   = eggperimeter(Mrminor_prev, Mrmajor_prev);   %pi.* (3 .*(Mrminor_prev + Mrmajor_prev) - sqrt((3.* Mrminor_prev + Mrmajor_prev) .* (Mrminor_prev +3 .* Mrmajor_prev))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
         Dh   = (4.*(pi .* Mrminor_prev .* Mrmajor_prev)) ./ Mp; %hydrualic diameter
         Rh   = (pi.* Mrminor_prev .* Mrmajor_prev) ./ Mp; % hydraulic radius
-        
-        eggp =  eggperimeter(Mrminor_prev, Mrmajor_prev);
         
         %%%%%%%%%%
         % Subglacial Schoof model: Conduit size
@@ -313,7 +311,7 @@ plot(time.t, Qin)
 %             time.oc_Mp(:,cc) = Mp;
         %%%%%%%%% dP: Expansion from gravitational potential energy above the water
             %%%%%%%%% line
-            dP = potentialdrop(Qin(cc),wet,eggp,dt,C,f);
+            dP = potentialdrop(Qin(cc),wet,Mp,dt,C,f);
             % The reason for calculating the above is to offset the elastic closure
             % at the top of the moulin.  On its own, the moulin will close
             % elastically after some days to months (depending on C.Y).  We know
