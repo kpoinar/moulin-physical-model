@@ -151,6 +151,8 @@ plot(time.t, Qin)
     x0 = M.xu(1);
     M.xu = M.xu - x0;
     M.xd = M.xd - x0;
+    %initalize dVdt
+    dVdt = 0;
     
     %% Set turbulence parameters
    
@@ -211,6 +213,11 @@ plot(time.t, Qin)
     cc = 0;
     nt = length(time.t);
     for t = time.t
+
+
+        
+        
+        
         
         cc = cc+1;
         if ~mod(cc,100), fprintf('timestep %d of %d (%1.0f%%) after %1.1f minutes \n', cc,nt,cc/nt*100,toc/60); end
@@ -220,6 +227,9 @@ plot(time.t, Qin)
         Mrminor_prev  = M.r_minor;
         Mrmajor_prev  = M.r_major;
         Mxuprev = M.xu;
+
+        
+
         
         
         %%%%%%%%%%
@@ -228,6 +238,8 @@ plot(time.t, Qin)
         Mp   = eggperimeter(Mrminor_prev, Mrmajor_prev);   %pi.* (3 .*(Mrminor_prev + Mrmajor_prev) - sqrt((3.* Mrminor_prev + Mrmajor_prev) .* (Mrminor_prev +3 .* Mrmajor_prev))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
         Dh   = (4.*(pi .* Mrminor_prev .* Mrmajor_prev)) ./ Mp; %hydrualic diameter
         Rh   = (pi.* Mrminor_prev .* Mrmajor_prev) ./ Mp; % hydraulic radius
+        
+        Ms_prev = Ms;
         
         %%%%%%%%%%
         % Subglacial Schoof model: Conduit size
@@ -238,7 +250,7 @@ plot(time.t, Qin)
         %Qin_tot       = Qin(cc) + time.V
        
         %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z, Qin_subbase(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
-        [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z, Qin(cc),H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
+        [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z, Qin(cc),dVdt,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
             %the first term in the function had been MrMinor_prev, which
             %actually is the radius, not the cross-sectional area, LCA
             %fixed on 6/7/20
@@ -395,8 +407,17 @@ plot(time.t, Qin)
             M.r_minor = max(M.r_minor + dC_minor + dE_minor + dM + 0 * dP, Mrmin); %not sure whhat the max does here, but added dP
             M.r_major = (M.xd - M.xu) - M.r_minor;
             
+
+            
         end
+ 
         
+        
+        %%%%%%%%%%
+        %calculate change in volume below the water level     
+        Ms_new   = 0.5 * (pi .* M.r_minor .* M.r_major) + 0.5 * (pi .* M.r_minor.^2);
+        dAdt_wet = M(wet)-Ms_new(wet);
+        dVdt = trapz(z(wet),dAdt_wet);
         
 
         
@@ -415,6 +436,9 @@ plot(time.t, Qin)
 %         if hw >= 0.999*H
 %             return;
 %         end
+
+
+
         
     end
     %% figures
