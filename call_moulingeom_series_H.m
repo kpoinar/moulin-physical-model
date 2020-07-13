@@ -27,7 +27,7 @@ savelocation         = ['~/Documents/Repositories/Moulin/real/moulin-physical-mo
 workingdirectory    = pwd; %yeah, I know this is a pain, but it makes things work more easily
 
 
-parameters.numofdays           =  30 ;              %for how many days do you want to run the model?
+parameters.numofdays           =  2 ;              %for how many days do you want to run the model?
 
 
 %set for each rund of the series: use vector for changing values, if a

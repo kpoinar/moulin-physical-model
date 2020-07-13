@@ -414,10 +414,18 @@ plot(time.t, Qin)
         
         
         %%%%%%%%%%
-        %calculate change in volume below the water level     
-        Ms_new   = 0.5 * (pi .* M.r_minor .* M.r_major) + 0.5 * (pi .* M.r_minor.^2);
-        dAdt_wet = M(wet)-Ms_new(wet);
-        dVdt = trapz(z(wet),dAdt_wet);
+%         %calculate change in volume below the water level     
+%         Ms_new   = 0.5 * (pi .* M.r_minor .* M.r_major) + 0.5 * (pi .* M.r_minor.^2);
+%         dAdt_wet = Ms(wet)-Ms_new(wet);
+%         dVdt = trapz(z(wet),dAdt_wet);
+        
+        %calculate change in volume below the water level due to creep and
+        %elastic
+        Mr_a = M.r_minor + dE_minor + dC_minor; %new radius without melt
+        Mr_b = M.r_major + dE_major + dE_minor; %new radius without melt
+        Ms_EC   = 0.5 * (pi .* Mr_a .* Mr_b) + 0.5 * (pi .* Mr_a.^2); %new moulin cross-section area without melt
+        dAdt_wet = Ms(wet)-Ms_EC(wet); %change in cross-section area, without melt, below the water level
+        dVdt = trapz(z(wet),dAdt_wet); %change in volume, without melt, below the water level    
         
 
         
