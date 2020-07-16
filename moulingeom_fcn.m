@@ -152,7 +152,7 @@ plot(time.t, Qin)
     M.xu = M.xu - x0;
     M.xd = M.xd - x0;
     %initalize dVdt
-    dVdt = 0;
+    Qvadd = 0;
     
     %% Set turbulence parameters
    
@@ -250,7 +250,7 @@ plot(time.t, Qin)
         %Qin_tot       = Qin(cc) + time.V
        
         %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z, Qin_subbase(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
-        [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z, Qin(cc),dVdt,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
+        [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z, Qin(cc),Qvadd,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
             %the first term in the function had been MrMinor_prev, which
             %actually is the radius, not the cross-sectional area, LCA
             %fixed on 6/7/20
@@ -278,6 +278,7 @@ plot(time.t, Qin)
             time.dC_minor(:,cc) = dC_minor;
         dC_major = creep(Mrmajor_prev,z,H,stress,T,dt,E,C);
             time.dC_major(:,cc) = dC_major;
+        Vadd_C = calculate_dQ_deformation(dC_major,dC_minor,M,z,dt,wet);
         
         
         %%%%%%%%% dF: Refreezing
@@ -349,6 +350,7 @@ plot(time.t, Qin)
         time.dE_minor(:,cc) = dE_minor;
         dE_major = elastic(Mrmajor_prev,stress,C);
         time.dE_major(:,cc) = dE_major;
+        Vadd_E = calculate_dQ_deformation(dE_major,dE_minor,M,z,dt,wet);
         
         
         %%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
@@ -356,7 +358,8 @@ plot(time.t, Qin)
         time.dG(:,cc) = dG;
         
         
-
+        %Update Qvadd
+        Qvadd=Vadd_E+Vadd_C
         
         %%%%%%%%LCA March 24 --> these need to change to reflect new dOC so
         %%%%%%%%both the  xd and xu need to have dOC depending on the dOC
@@ -412,20 +415,7 @@ plot(time.t, Qin)
         end
  
         
-        
-        %%%%%%%%%%
-%         %calculate change in volume below the water level     
-%         Ms_new   = 0.5 * (pi .* M.r_minor .* M.r_major) + 0.5 * (pi .* M.r_minor.^2);
-%         dAdt_wet = Ms(wet)-Ms_new(wet);
-%         dVdt = trapz(z(wet),dAdt_wet);
-        
-        %calculate change in volume below the water level due to creep and
-        %elastic
-        Mr_a = M.r_minor + dE_minor + dC_minor; %new radius without melt
-        Mr_b = M.r_major + dE_major + dE_minor; %new radius without melt
-        Ms_EC   = 0.5 * (pi .* Mr_a .* Mr_b) + 0.5 * (pi .* Mr_a.^2); %new moulin cross-section area without melt
-        dAdt_wet = Ms(wet)-Ms_EC(wet); %change in cross-section area, without melt, below the water level
-        dVdt = trapz(z(wet),dAdt_wet); %change in volume, without melt, below the water level    
+
         
 
         
