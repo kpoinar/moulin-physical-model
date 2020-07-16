@@ -1,4 +1,4 @@
-function dVdt = calculate_dQ_deformation(dMr_major,dMr_minor,M,z,dt,wet)
+function dV = calculate_dQ_deformation(dMr_major,dMr_minor,M,z,wet)
 	% Calculate the change of volume per second produce by moulin deformation.
 	%dMr_major: dE_major or dC_major
 	%dMr_minor: dC_minor or dC_minor
@@ -11,5 +11,4 @@ function dVdt = calculate_dQ_deformation(dMr_major,dMr_minor,M,z,dt,wet)
     dA_tot = 0.5.*dA_ellipse + 0.5.*dA_circle;
     %change in volume below the water level for an entire timestep!
     dV = trapz(z(wet),dA_tot(wet));
-    %transform volume in discharge units for compatibility with Qin
-	dVdt = dV/dt;
+ 
