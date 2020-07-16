@@ -279,7 +279,7 @@ plot(time.t, Qin)
         dC_major = creep(Mrmajor_prev,z,H,stress,T,dt,E,C);
             time.dC_major(:,cc) = dC_major;
         Vadd_C = calculate_dQ_deformation(dC_major,dC_minor,M,z,dt,wet);
-        
+        time.Vadd_C(:,cc) = Vadd_C;
         
         %%%%%%%%% dF: Refreezing
         % Refreezing
@@ -351,7 +351,7 @@ plot(time.t, Qin)
         dE_major = elastic(Mrmajor_prev,stress,C);
         time.dE_major(:,cc) = dE_major;
         Vadd_E = calculate_dQ_deformation(dE_major,dE_minor,M,z,dt,wet);
-        
+        time.Vadd_E(:,cc) = Vadd_E;
         
         %%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
         dG = deformGlen(H, T, alpha, z, n, dt, C);
@@ -359,7 +359,8 @@ plot(time.t, Qin)
         
         
         %Update Qvadd
-        Qvadd=Vadd_E+Vadd_C
+        Qvadd=Vadd_E+Vadd_C;
+        time.Qvadd(:,cc) = Qvadd;
         
         %%%%%%%%LCA March 24 --> these need to change to reflect new dOC so
         %%%%%%%%both the  xd and xu need to have dOC depending on the dOC
