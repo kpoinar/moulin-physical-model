@@ -248,9 +248,10 @@ plot(time.t, Qin)
         %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
         opt   = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
         %Qin_tot       = Qin(cc) + time.V
-       
+        Qin_compensated = Qin(cc)+Qvadd;
+        time.Qin_compensated(cc) = Qin_compensated;
         %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z, Qin_subbase(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
-        [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z, Qin(cc),Qvadd,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
+        [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z,Qin_compensated,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
             %the first term in the function had been MrMinor_prev, which
             %actually is the radius, not the cross-sectional area, LCA
             %fixed on 6/7/20
@@ -278,8 +279,8 @@ plot(time.t, Qin)
             time.dC_minor(:,cc) = dC_minor;
         dC_major = creep(Mrmajor_prev,z,H,stress,T,dt,E,C);
             time.dC_major(:,cc) = dC_major;
-        Vadd_C = calculate_dQ_deformation(dC_major,dC_minor,M,z,dt,wet);
-        time.Vadd_C(:,cc) = Vadd_C;
+        Vadd_C = calculate_dQ_deformation(dC_major,dC_minor,M,z,wet);
+        time.Vadd_C(cc) = Vadd_C;
         
         %%%%%%%%% dF: Refreezing
         % Refreezing
@@ -340,9 +341,10 @@ plot(time.t, Qin)
         % compared to the current Qin (~4 m2 per dt).  It can break the model
         % if the moulin and subglacial conduit aren't big enough.
         % Add the
-        if cc < length(time.t)
-            Qin(cc+1) = Qin(cc+1) + Vadd_turb / dt + Vadd_oc / dt + Vadd_p / dt;
-        end
+        %CT commented below: Qin is update just before subglacialsc
+        %if cc < length(time.t)
+        %    Qin(cc+1) = Qin(cc+1) + Vadd_turb / dt + Vadd_oc / dt + Vadd_p / dt;
+        %end
         
         %%%%%%%%% dE: Elastic deformation
         % Elastic deformation: This is small, and sensitive to water pressure
@@ -350,8 +352,8 @@ plot(time.t, Qin)
         time.dE_minor(:,cc) = dE_minor;
         dE_major = elastic(Mrmajor_prev,stress,C);
         time.dE_major(:,cc) = dE_major;
-        Vadd_E = calculate_dQ_deformation(dE_major,dE_minor,M,z,dt,wet);
-        time.Vadd_E(:,cc) = Vadd_E;
+        Vadd_E = calculate_dQ_deformation(dE_major,dE_minor,M,z,wet);
+        time.Vadd_E(cc) = Vadd_E;
         
         %%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
         dG = deformGlen(H, T, alpha, z, n, dt, C);
@@ -359,8 +361,9 @@ plot(time.t, Qin)
         
         
         %Update Qvadd
-        Qvadd=Vadd_E+Vadd_C;
-        time.Qvadd(:,cc) = Qvadd;
+        Qvadd=(Vadd_E+Vadd_C+Vadd_oc)/dt; %!! Vadd_p is set to zero!!
+        time.Qvadd(cc) = Qvadd;
+        
         
         %%%%%%%%LCA March 24 --> these need to change to reflect new dOC so
         %%%%%%%%both the  xd and xu need to have dOC depending on the dOC
