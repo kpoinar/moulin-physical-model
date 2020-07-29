@@ -1,5 +1,6 @@
 function dV = calculate_dQ_deformation(dMr_major,dMr_minor,M,z,wet)
-	% Calculate the change of volume per second produce by moulin deformation.
+	% Calculate the change of volume produced by moulin deformation.
+    % The output, dV, is the volume change over the current timestep.
 	%dMr_major: dE_major or dC_major
 	%dMr_minor: dC_minor or dC_minor
 
