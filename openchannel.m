@@ -86,7 +86,7 @@ neg(neg>=0)=1;
 %%%%%%%%%%%%% calculate the wetted perimeter, hydraulic diameter, and hydraulic radius 
 
 % % For calculations using a semi-ellipse
-% [Mp, area_ell] = ellipseperimeter(Mr_minor, Mr_major);
+% Mp = ellipseperimeter(Mr_minor, Mr_major);
 % Mp = Mp/2; %to get a semiellipse...
 % area_ell = area_ell/2; %to get a semiellipse...
 % 

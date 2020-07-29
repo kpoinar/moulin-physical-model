@@ -8,10 +8,10 @@ clear variables
 seriesname          = 'real';  % a descritive name of the entire runseries
 savefile = datestr(now, 'mm-dd-yyyy');
 
-if ~exist(['/modeloutputs/_', seriesname, savefile], 'dir')
+if ~exist(['./modeloutputs/', seriesname, savefile], 'dir')
     disp('making todays file ...')
-    %mkdir(['./modeloutputs/_', seriesname, savefile]) 
-    mkdir(['~/Documents/Repositories/Moulin/real/moulin-physical-model/modeloutputs/', savefile]) 
+    mkdir(['./modeloutputs/', seriesname, savefile]) 
+    %mkdir(['~/Documents/Repositories/Moulin/real/moulin-physical-model/modeloutputs/', savefile]) 
 end    
 
 warning('off')
@@ -22,12 +22,12 @@ clearpreviousfiles  = false;                 %This clears the files previously s
 makeplots_tf        = true;              % do you want to make the plots for each?
 savefigures_tf      = true;              % do you want to save plots for each?
 showfigures_tf      = false;              %show the figures
-%savelocation        =['./modeloutputs/_' ,seriesname, savefile];
-savelocation         = ['~/Documents/Repositories/Moulin/real/moulin-physical-model/modeloutputs/', savefile]; % where do you want to save the outputs?
+savelocation        =['./modeloutputs/' ,seriesname, savefile];
+% savelocation         = ['~/Documents/Repositories/Moulin/real/moulin-physical-model/modeloutputs/', savefile]; % where do you want to save the outputs?
 workingdirectory    = pwd; %yeah, I know this is a pain, but it makes things work more easily
 
 
-parameters.numofdays           =  30 ;              %for how many days do you want to run the model?
+parameters.numofdays           =  10 ;              %for how many days do you want to run the model?
 
 
 %set for each rund of the series: use vector for changing values, if a
