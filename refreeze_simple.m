@@ -6,9 +6,9 @@ function [dF, Vfrz] = refreeze_simple(Mrminor,Mrmajor,Tfar,z,hw,t,dt,C)
 %kappa = 37.2/31557600; % thermal diffusivity, m2/s : 1.18e-6 (CT)replaced
 %this value with kappa in makeConstant, but value is slightly different.
 % KP - This is the specific heat capacity of ice, using the value from Alley (2005), http://doi.org/10.3189/172756405781813483 .  We have our own value of ice specific heat capacity in makeConstants.m, as C.cp = 2115 J/kg/K.  We should use C.cp here.
-dF = C.cp*(Tfar-T0)*2*sqrt(C.kappa*t/pi)/C.Lf;
-dFprev = C.cp*(Tfar-T0)*2*sqrt(C.kappa*(t-dt)/pi)/C.Lf;
-dF = dF + dFprev;
+dF = C.cp*(Tfar-C.T0)*2*sqrt(C.kappa*t/pi)/C.Lf;
+dFprev = C.cp*(Tfar-C.T0)*2*sqrt(C.kappa*(t-dt)/pi)/C.Lf;
+dF = dF - dFprev;
 % No freezing where there's no water
 dF(z>hw) = 0;
 % ^ The value of dF is negative (closure) because Tfar < To
