@@ -52,22 +52,26 @@ C = makeConstants;
 % waterpresent(waterpresent<0) =1; %water is not present, so calculations need to be done.
 
 %%%%%%%%%%%%% calculate the length overwhich the water is experiencing headloss
-dL = diff(Mxu);
+%dvnL is the distance between the center point of one vertical node and the
+%next...This value can be a minimum of 1 (as initialized, when the node length is 1 meter), but can be
+%greater than 1 if the nodes are offset due to deformation associated with
+%Glens flow law.
+dvnL = diff(Mxu);
  
- dL = [dL(1); dL];
- dL(end) =  dL(end-1);
- neg = dL;
+ dvnL = [dvnL(1); dvnL];
+ dvnL(end) =  dvnL(end-1);
+ neg = dvnL;
 
  neg2 = neg;
 neg(neg<0) = 0;
 neg(neg>=0)=1;
  
- dL = max(dL,0);  % protect against negative dL - 
+ dvnL = max(dvnL,0);  % protect against negative dL - 
  
  %repl = dL<=0;
  
  %dL = dz;% 
- dL = sqrt(dL.^2 + dz.^2);
+ dvnL = sqrt(dvnL.^2 + dz.^2);
 
  
      % Find out where dL is zero. We'll need to replace these indices.
@@ -89,11 +93,9 @@ neg(neg>=0)=1;
 % Mp = ellipseperimeter(Mr_minor, Mr_major);
 % Mp = Mp/2; %to get a semiellipse...
 % area_ell = area_ell/2; %to get a semiellipse...
-% 
 
-% For the calculations using a semicircle
-%Mr_major = Mr_major/2; %This is just 
-area_ell = pi .* Mr_major.^2;
+% For calculations assuming a semicircle
+area_ell = 0.5 .* pi .* Mr_major.^2;
 Mp       = 2 .* pi .* Mr_major;
 
 Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
@@ -129,12 +131,12 @@ Tmw  =  273.15;
 
 %%%%%%%%%%%%%% expected headloss based on the discharge
 %uw = (2.* dz .* Dh .* C.g)/ (fR .* dL) .^(1/3); 
-hL = (((Qin./area_ell).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
+hL = (((Qin./area_ell).^2) .*fR .* dvnL) ./ (2 .* Dh .* C.g);
 %hL = (((9).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
 %hL = 1;
 %%%%%%%%%%%%% calculate the expected melt 
 if include_ice_temperature
-    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ...
+    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dvnL)) ...
                 ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf));
 
     %This is modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
@@ -142,7 +144,7 @@ if include_ice_temperature
     % include the surrounding ice temperature 
     
 else
-    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dL)) ./ (Mp .* C.rhoi .* C.Lf); %#ok<UNRCH>
+    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dvnL)) ./ (Mp .* C.rhoi .* C.Lf); %#ok<UNRCH>
     % This parameterization is closer to that which is traditionally used
     % to calculate melting within a subglacial channel where the ice and
     % water are at the same temperature

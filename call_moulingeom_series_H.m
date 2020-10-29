@@ -20,8 +20,8 @@ warning('off')
 %set for the entire series of runs
 clearpreviousfiles  = false;                 %This clears the files previously saved on this day for this script, use with caution
 makeplots_tf        = true;              % do you want to make the plots for each?
-savefigures_tf      = true;              % do you want to save plots for each?
-showfigures_tf      = false;              %show the figures
+savefigures_tf      = false;              % do you want to save plots for each?
+showfigures_tf      = true;              %show the figures
 savelocation        =['./modeloutputs/' ,seriesname, savefile];
 % savelocation         = ['~/Documents/Repositories/Moulin/real/moulin-physical-model/modeloutputs/', savefile]; % where do you want to save the outputs?
 workingdirectory    = pwd; %yeah, I know this is a pain, but it makes things work more easily
