@@ -10,8 +10,8 @@ savefile = datestr(now, 'mm-dd-yyyy');
 
 if ~exist(['./modeloutputs/', seriesname, savefile], 'dir')
     disp('making todays file ...')
-    mkdir(['./modeloutputs/', seriesname, savefile]) 
-    %mkdir(['~/Documents/Repositories/Moulin/real/moulin-physical-model/modeloutputs/', savefile]) 
+    %mkdir(['./modeloutputs/', seriesname, savefile]) 
+    mkdir(['~/Documents/Repositories/Moulin/manumodel/moulin-physical-model/modeloutputs/', savefile]) 
 end    
 
 warning('off')
@@ -22,12 +22,12 @@ clearpreviousfiles  = false;                 %This clears the files previously s
 makeplots_tf        = true;              % do you want to make the plots for each?
 savefigures_tf      = false;              % do you want to save plots for each?
 showfigures_tf      = true;              %show the figures
-savelocation        =['./modeloutputs/' ,seriesname, savefile];
-% savelocation         = ['~/Documents/Repositories/Moulin/real/moulin-physical-model/modeloutputs/', savefile]; % where do you want to save the outputs?
+%savelocation        =['./modeloutputs/' ,seriesname, savefile];
+ savelocation         = ['~/Documents/Repositories/Moulin/manumodel/moulin-physical-model/modeloutputs/', savefile]; % where do you want to save the outputs?
 workingdirectory    = pwd; %yeah, I know this is a pain, but it makes things work more easily
 
 
-parameters.numofdays           =  10 ;              %for how many days do you want to run the model?
+parameters.numofdays           =  120 ;              %for how many days do you want to run the model?
 
 
 %set for each rund of the series: use vector for changing values, if a
@@ -38,7 +38,7 @@ parameters.numofdays           =  10 ;              %for how many days do you wa
 parameters.unfilled_melting    = 1;              %what type of melting do you want above the water line? 
                                                   %1. Open channel, 2. waterfall, 3. potential drop, 4, none
                                                 
-parameters.A_value             = [ 6e-24];           %A value for the subglacial
+parameters.A_value             = [ 3e-24];           %A value for the subglacial
                                                   %channel - only uncomment if you want to change this with each model run,
                                                   %otherwise, set in makeConstants
                                                   
@@ -51,7 +51,7 @@ parameters.Tdatatype           = {'Ryser_foxx'};   %Choose the ice temperature t
 
 % parameters.H                   = ([669 820 947 1058 1159 1252 1339 1420 1497 1569]);  % 10 ice thicknesses - may work on CCR
 %parameters.H                   = ([669  820  1058  1339  1569]);  % 5 ice thicknesses (kulusuk limit for 10 day runs)
-parameters.H                   = 820;    % H = 820 is our standard moulin, 30 km from the margin.
+parameters.H                   = 553;    % H = 820 is our standard moulin, 30 km from the margin.
 
 
 % ID	surf	bed	thickness
@@ -90,15 +90,15 @@ parameters.E                   = [5];               %moulin deformation enhancem
 
 
 %%%%%%%%%%%
-parameters.Qinreal             = false;
+parameters.Qinreal             = true;
 % if Qin is from realistic data
 if parameters.Qinreal
-    parameters.Qinfile             = {'/Users/lcandre2/Documents/Repositories/Moulin/real/moulin-physical-model/Qin_real_2019.mat'}; %{'Qincosines_peak7pm.mat'}; '/
+    parameters.Qinfile             = {'/Users/lcandre2/Documents/Repositories/manumodel/moulin-physical-model/Qin_real_2019.mat'}; %{'Qincosines_peak7pm.mat'}; '/
     
     parameters.Qin_smoothval       = 12; % for the smooth function assuming 1 hour data. This dampens diurnal varibility
     parameters.Qin_year            = {'y2019'};
-    parameters.Qin_basin           = {'b722'}; %'b749' %b727
-    parameters.Qin_baseflow        = {'b722_baseflow'};  %basename_baseflow, column 1 time, column2 baseflow estimate
+    parameters.Qin_basin           = {'b044'}; %'b749' %b727
+    parameters.Qin_baseflow        = {'b044_baseflow'};  %basename_baseflow, column 1 time, column2 baseflow estimate - This is only added to the subglacial calculation 
     parameters.Qin_dampen          = 0.5; %this dampens the diurnal varibility
     %%%%%%%%%%
 else

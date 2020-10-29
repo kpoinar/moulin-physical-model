@@ -82,7 +82,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         
         %apply a smoothing to Qin to dampen diurnal varibility
         Qin = max(0.1, Qin);
-        Qin = smooth(Qin, modelinputs.Qin_smoothval);
+        Qin = smoothdata(Qin, 'movmean',  modelinputs.Qin_smoothval);
         time.Qin = Qin;  %save for future plotting
         clear Q
         
@@ -95,9 +95,10 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         Qbase = Qbase';
         time.Qbase = Qbase;
         clear Qbase_subglacial baseflow
-        
-        Qin = Qin + Qbase;
-        time.Qin = Qin + Qbase;
+
+%lca commented these out in order to prevent Qbase from contributing to moulin geometry          
+%         Qin = Qin + Qbase;
+%         time.Qin = Qin + Qbase;
         
     else 
         load(modelinputs.Qinfile{1}) %1 = time, 2 cosine function, 3
@@ -248,7 +249,9 @@ plot(time.t, Qin)
         %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z,Qin(cc),H,L,C,tspan,y0);
         opt   = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3));
         %Qin_tot       = Qin(cc) + time.V
-        Qin_compensated = Qin(cc)+Qadd;
+        
+        %Qin_compensated = Qin(cc)+Qadd;
+        Qin_compensated = Qin(cc)+Qadd + Qbase(cc); %including Qbase provides a minimum base flow for the subglacial model without needing to route additional water through the moulin
         time.Qin_compensated(cc) = Qin_compensated;
         %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z, Qin_subbase(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
         [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z,Qin_compensated,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
@@ -260,6 +263,7 @@ plot(time.t, Qin)
             time.hw(cc)   = hw;
             time.Qout(cc) = Qout ;% - Qbase(cc); %this removes the baseflow from the Qout
             time.dydt_out(cc) = dydt_out;
+            time.Qbase(cc) = Qbase(cc); 
         
         %%%%%%%%%%%
         % which nodes are underwater or at the water line (wet) versus above the water line?
