@@ -96,7 +96,7 @@ neg(neg>=0)=1;
 
 % For calculations assuming a semicircle
 area_ell = 0.5 .* pi .* Mr_major.^2;
-Mp       = 2 .* pi .* Mr_major;
+Mp       = pi .* Mr_major;
 
 Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
 Rh   = area_ell ./ Mp; % hydraulic radius
