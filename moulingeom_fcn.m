@@ -91,7 +91,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         load(modelinputs.Qinfile{1});
         baseflow  =  Q2.(modelinputs.Qin_year{1}).(modelinputs.Qin_baseflow{1});
 
-        Qbase  = 3.* interp1(baseflow(:,1), baseflow(:,2), time.t, 'spline', 'extrap'); 
+        Qbase  = 4.* interp1(baseflow(:,1), baseflow(:,2), time.t, 'spline', 'extrap'); 
         Qbase = Qbase';
         time.Qbase = Qbase;
         clear Qbase_subglacial baseflow

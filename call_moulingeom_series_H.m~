@@ -5,13 +5,13 @@ clear variables
 %close all
 %clc
 
-seriesname          = '741_fixed_geometry_diffinputs';  % a descritive name of the entire runseries
+seriesname          = '741_2m_fixed_geometry';  % a descritive name of the entire runseries
 savefile = datestr(now, 'mm-dd-yyyy');
 
 if ~exist(['./modeloutputs/', seriesname, savefile], 'dir')
     disp('making todays file ...')
     %mkdir(['./modeloutputs/', seriesname, savefile]) 
-    mkdir(['~/Documents/Repositories/Moulin_01_31_21/moulin-physical-model/modeloutputs/', savefile]) 
+    mkdir(['~/Documents/Repositories/Moulin_01_30_21/moulin-physical-model/modeloutputs/', savefile]) 
 end    
 
 warning('off')
@@ -23,7 +23,7 @@ makeplots_tf        = true;              % do you want to make the plots for eac
 savefigures_tf      = false;              % do you want to save plots for each?
 showfigures_tf      = true;              %show the figures
 %savelocation        =['./modeloutputs/' ,seriesname, savefile];
- savelocation         = ['~/Documents/Repositories/Moulin_01_31_21/moulin-physical-model/modeloutputs/', savefile]; % where do you want to save the outputs?
+ savelocation         = ['~/Documents/Repositories/Moulin_01_30_21/moulin-physical-model/modeloutputs/', savefile]; % where do you want to save the outputs?
 workingdirectory    = pwd; %yeah, I know this is a pain, but it makes things work more easily
 
 
@@ -72,8 +72,8 @@ parameters.H                   = 741;    % H = 820 is our standard moulin, 30 km
                                                    % for a given ice thickness based on an idealized ice sheet profile.
                                                    
 %parameters.R0            = [0.65  1.0   2.0  3.5  5.0];
-parameters.R0                  = 1.1;%0.75;               % initial moulin radius @ bed
-parameters.Rtop                = 1.1;             % initial moulin radius @ surface (should be less than R0)
+parameters.R0                  = 2;%0.75;               % initial moulin radius @ bed
+parameters.Rtop                = 2;             % initial moulin radius @ surface (should be less than R0)
 
 parameters.L                   = L;%[20e3 30e3 15e3]; % distance from terminus for subglaical channel
 
@@ -172,10 +172,10 @@ for ii = 1:maxlengthofseries
     for jj = 1:length(lengthofseries)
         modelinputs.(names{jj}) = parameters.(names{jj})(ii);
     end
-    %time   =  moulingeom_fcn(workingdirectory, savelocation,  makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savetime);
+    time   =  moulingeom_fcn(workingdirectory, savelocation,  makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savetime);
    
     % DO STATIC CYLINDER MOULIN
-    time   =  moulinCYLINDER_fcn(workingdirectory, savelocation,  makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savetime);
+    %time   =  moulinCYLINDER_fcn(workingdirectory, savelocation,  makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savetime);
 
     
     res{ii,1} = ['run_', num2str(ii)];
@@ -198,6 +198,6 @@ end
    cd(workingdirectory)
    
    %copy script with new name and tar entire package
-   copyfile([workingdirectory, '/call_moulingeom_series_H.m'], [savelocation, '/', savefile, '_call_moulingeom_series_741_variable_geometry_diffinputs.m']);
+   copyfile([workingdirectory, '/call_moulingeom_series_H.m'], [savelocation, '/', savefile, '_call_moulingeom_series_741_variable_geometry.m']);
    
    disp('Done!')
