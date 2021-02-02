@@ -1,6 +1,5 @@
 % use this file to run a series of moulin model runs
-
-%% a little set up
+ 
 clear variables 
 %close all
 %clc
@@ -35,47 +34,44 @@ parameters.numofdays           =  120 ;              %for how many days do you w
 %%%NOTE: variables either need to be 1 or the full number of the runs - I
 %%%am not a good enough coder to get 
 
-parameters.unfilled_melting    = 1;              %what type of melting do you want above the water line? 
-                                                  %1. Open channel, 2. waterfall, 3. potential drop, 4, none
+parameters.unfilled_melting    = 1;                      %what type of melting do you want above the water line? 
+                                                          %1. Open channel, 2. waterfall, 3. potential drop, 4, none
                                                 
-parameters.A_value             = [ 3e-24];           %A value for the subglacial
-                                                  %channel - only uncomment if you want to change this with each model run,
-                                                  %otherwise, set in makeConstants
+parameters.A_value             = [ 3e-24];                %A value for the subglacial
+                                                          %channel - only uncomment if you want to change this with each model run,
+                                                          %otherwise, set in makeConstants
                                                   
 %parameters.ShearModulus        = [1  3  5  7  9]*1e9;     % Shear modulus (elastic behavior)
-                                                  %only uncomment if you want to change this with each model run,
-                                                  %otherwise, set in makeConstants
+                                                           %only uncomment if you want to change this with each model run,
+                                                           %otherwise, set in makeConstants
                                                 
-parameters.Tdatatype           = {'Ryser_foxx'};   %Choose the ice temperature to use for the model                                                
-%parameters.Tdatatype  = {'IkenB','Ryser_gull','Ryser_foxx','Cold','Temperate'};
+parameters.Tdatatype           = {'Ryser_foxx'};           %Choose the ice temperature to use for the model                                                
+%parameters.Tdatatype          = {'IkenB','Ryser_gull','Ryser_foxx','Cold','Temperate'};
 
-% parameters.H                   = ([669 820 947 1058 1159 1252 1339 1420 1497 1569]);  % 10 ice thicknesses - may work on CCR
-%parameters.H                   = ([669  820  1058  1339  1569]);  % 5 ice thicknesses (kulusuk limit for 10 day runs)
 parameters.H                   = 553;    % H = 820 is our standard moulin, 30 km from the margin.
 
-
+%% basins to use for realistic runs
 % ID	surf	bed	thickness
-% 44	949	    396	553**** done
+% 44	949	    396	553 **
 % 184	1254	240	1014
-% 352	1144	403	741 *** done 
+% 352	1144	403	741 **
 % 718	1623	203	1420
-% 722	1554	239	1315**
+% 722	1554	239	1315 **
 % 727	1307	130	1177
 % 733	1363	278	1085
-% 749	978	    -35	1013  **
+% 749	978	    -35	1013
 % 754	1051	154	897
 % 895	1514	225	1289
 % 911	1539	200	1339
 
 
 [L,alpha, Qinrange, Qinbase ]  = makeicesheetgeom(parameters.H);      %this function provides a consistent distance from terminus and local slope for
-                                                   % for a given ice thickness based on an idealized ice sheet profile.
+                                                  % for a given ice thickness based on an idealized ice sheet profile.
                                                    
-%parameters.R0            = [0.65  1.0   2.0  3.5  5.0];
-parameters.R0                  = 2;%0.75;               % initial moulin radius @ bed
+parameters.R0                  = 2;               % initial moulin radius @ bed
 parameters.Rtop                = 0.5;             % initial moulin radius @ surface (should be less than R0)
 
-parameters.L                   = L;%[20e3 30e3 15e3]; % distance from terminus for subglaical channel
+parameters.L                   = L;               % distance from terminus for subglaical channel
 
 parameters.use_pD_downstream   = false;%true; 
 parameters.fract_pd_melting    = 0.0;            %This is fraction of energy from potential drop that is used for melting
@@ -83,9 +79,9 @@ parameters.fract_pd_melting    = 0.0;            %This is fraction of energy fro
 
 
 
-parameters.alpha               = [alpha];% 0.03;            %regional slope
+parameters.alpha               = [alpha];        %regional slope
 
-parameters.E                   = [5];               %moulin deformation enhancement factor for creep
+parameters.E                   = [5];            %moulin deformation enhancement factor for creep
 
 
 
@@ -93,7 +89,7 @@ parameters.E                   = [5];               %moulin deformation enhancem
 parameters.Qinreal             = true;
 % if Qin is from realistic data
 if parameters.Qinreal
-    parameters.Qinfile             = {'/Users/lcandre2/Documents/Repositories/manumodel/moulin-physical-model/Qin_real_2019.mat'}; %{'Qincosines_peak7pm.mat'}; '/
+    parameters.Qinfile             = {'Qin_real_2019.mat'}; %{'Qincosines_peak7pm.mat'}; '/
     
     parameters.Qin_smoothval       = 12; % for the smooth function assuming 1 hour data. This dampens diurnal varibility
     parameters.Qin_year            = {'y2019'};
@@ -107,9 +103,7 @@ else
     parameters.Qinfile             = {'Q_cosine_elevation_bands.mat'} %{'Qincosines_peak7pm.mat'}; '/
     parameters.Qintype             = 2;    % 2 is cosinusoid, 3 is two superimposed cosinusoids, 4 has more variability, 5 has most variability
     parameters.Qinrange            = 0.5;     % of the form:  Qin     = Qin*Qinrange + Qinbase;
-    %     nqinrange = length(parameters.Qinrange);
     parameters.Qinbase             = 3.5;      % of the form:  Qin     = Qin*Qinrange + Qinbase;
-    %     nqinbase  = length(parameters.Qinbase);
 end
 %%%%%%%%%%
 
@@ -125,7 +119,7 @@ parameters.relative_roughness_OC = 0.5;          %relative roughness above the w
  
 %if variable_fR_oc and variable_fR_wet are true, then these do *NOT* matter
 parameters.fR_fixed_wet                = 0.1;%logspace(-2,0,5);%0.1;  
-parameters.fR_fixed_oc                 = 0.5; %logspace(-2,0,5); %1;  % base value was 10!
+parameters.fR_fixed_oc                 = 0.8; %logspace(-2,0,5); %1;  % base value was 10!
 
 % Background stress conditions (for elastic deformation)
 parameters.sigx = 0e3;    % compressive (-) or extensive (+).  Make sigy + and keep sigx 0.
@@ -184,9 +178,6 @@ for ii = 1:maxlengthofseries
     
 end
 
-%
-%
-%%
 
    disp(['Saving ', seriesname, ' in ', savelocation,  '...'])
    cd(workingdirectory)
