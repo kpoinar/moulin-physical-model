@@ -1,9 +1,0 @@
-*.fig
-*.m~
-*.png
-*.mat
-*.avi
-*.mov
-modeloutputs/*
-movies/*
-figures/*
