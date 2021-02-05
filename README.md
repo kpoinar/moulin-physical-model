@@ -87,9 +87,9 @@ The function ColorBrewer.m is missing.  It is available at the [Mathworks File E
 
 Andrews, Poinar, and Trunz (2020).  Physical controls on moulin geometry and evolution within the Greenland ice sheet.  Soon available on The Cryosphere Discussions.
 
-Covington 2020.  
+Covington, M. D., Gulley, J. D., Trunz, C., Mejia, J., & Gadd, W. (2020). Moulin Volumes Regulate Subglacial Water Pressure on the Greenland Ice Sheet. Geophysical Research Letters, 47(20). https://doi.org/10.1029/2020GL088901
 
-Schoof (2010). Ice sheet acceleration driven by melt supply variability, Nature, 468, 803–806.
+Schoof, C. (2010). Ice-sheet acceleration driven by melt supply variability. Nature, 468(7325), 803–806. https://doi.org/10.1038/nature09618
 
 
 
