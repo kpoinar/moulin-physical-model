@@ -214,11 +214,6 @@ plot(time.t, Qin)
     cc = 0;
     nt = length(time.t);
     for t = time.t
-
-
-        
-        
-        
         
         cc = cc+1;
         if ~mod(cc,100), fprintf('timestep %d of %d (%1.0f%%) after %1.1f minutes \n', cc,nt,cc/nt*100,toc/60); end
@@ -230,17 +225,27 @@ plot(time.t, Qin)
         Mxuprev = M.xu;
 
         
-
-        
-        
         %%%%%%%%%%
         %calculate moulin parameters
-        Ms   = 0.5 * (pi .* Mrminor_prev .*Mrmajor_prev) + 0.5 * (pi .* Mrminor_prev.^2); %moulin cross-section area
-        Mp   = eggperimeter(Mrminor_prev, Mrmajor_prev);   %pi.* (3 .*(Mrminor_prev + Mrmajor_prev) - sqrt((3.* Mrminor_prev + Mrmajor_prev) .* (Mrminor_prev +3 .* Mrmajor_prev))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
-        Dh   = (4.*(pi .* Mrminor_prev .* Mrmajor_prev)) ./ Mp; %hydrualic diameter
-        Rh   = (pi.* Mrminor_prev .* Mrmajor_prev) ./ Mp; % hydraulic radius
+        if contains(modelinputs.planshape, 'egg')
+            Ms   = 0.5 * (pi .* Mrminor_prev .*Mrmajor_prev) + 0.5 * (pi .* Mrminor_prev.^2); %moulin cross-section area
+            Mp   = eggperimeter(Mrminor_prev, Mrmajor_prev);   %pi.* (3 .*(Mrminor_prev + Mrmajor_prev) - sqrt((3.* Mrminor_prev + Mrmajor_prev) .* (Mrminor_prev +3 .* Mrmajor_prev))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
+            Dh   = (4.*(pi .* Mrminor_prev .* Mrmajor_prev)) ./ Mp; %hydrualic diameter
+            Rh   = (pi.* Mrminor_prev .* Mrmajor_prev) ./ Mp; % hydraulic radius
         
-        Ms_prev = Ms;
+            Ms_prev = Ms;
+            
+        elseif contains(modelinputs.planshape, 'circle') % I approximate the circle as an ellipse because this allows us to keep a major and minor radius. Need to confim
+            Ms   =  pi .* Mrmajor_prev .* Mrmajor_prev; %moulin cross-section area as a circle
+            Mp   = 2 .* pi .* Mrmajor_prev; %pi.* (3 .*(Mrminor_prev + Mrmajor_prev) - sqrt((3.* Mrminor_prev + Mrmajor_prev) .* (Mrminor_prev +3 .* Mrmajor_prev))); % wetted/melting perimeter =  ellipse perimeter approx pi [ 3(Mrminor+Mrmajor) - sqrt((3*Mrminor+Mrmajor)(Mrminor+3*Mrmajor))]
+            Dh   = (4.*(pi .* Mrmajor_prev .* Mrmajor_prev)) ./ Mp; %hydrualic diameter
+            Rh   = (pi.* Mrmajor_prev .* Mrmajor_prev) ./ Mp; % hydraulic radius
+        
+            Ms_prev = Ms;
+             
+            
+        end
+        
         
         %%%%%%%%%%
         % Subglacial Schoof model: Conduit size
@@ -279,10 +284,19 @@ plot(time.t, Qin)
         
         %%%%%%%%% dC: Creep deformation
         %Creep deformation: do this first because it is a larger term
-        dC_minor = creep(Mrminor_prev,z,H,stress,T,dt,E,C);
-            time.dC_minor(:,cc) = dC_minor;
+
         dC_major = creep(Mrmajor_prev,z,H,stress,T,dt,E,C);
             time.dC_major(:,cc) = dC_major;
+        
+        %This if statement is used to eliminate the minor radius when the model us run with a circular crossectional area.    
+         if contains(modelinputs.planshape, 'egg')    
+            dC_minor = creep(Mrminor_prev,z,H,stress,T,dt,E,C);
+                time.dC_minor(:,cc) = dC_minor;    
+         elseif contains(modelinputs.planshape, 'circle')
+            dC_minor = dC_major;
+                time.dC_minor(:,cc) = dC_minor;
+         end
+             
         % Creep deformation changes the volume of the moulin.  We need to 
         % calculate this volume change and send it to subglacialsc:
         Vadd_C = calculate_dQ_deformation(dC_major,dC_minor,M,z,wet);
@@ -298,7 +312,20 @@ plot(time.t, Qin)
         
         %%%%%%%%% dM: Turbulent melting
         % Turbulent melting:
-        [dM, uw, Vadd_turb] = turbulence(Qout, Ms, Mp, Dh, Rh, M.xd, dt, Ti, dz, z, wet, include_ice_temperature, fR_wet_variable, relative_roughness_wet,   fR_wet_fixed);
+        [dMarea, uw, Vadd_turb] = turbulence(Qout, Ms, Mp, Dh, Rh, M.xd, dt, Ti, dz, z, wet, include_ice_temperature, fR_wet_variable, relative_roughness_wet,   fR_wet_fixed);
+        
+        %dM is the change in cross-sectional area. Now it needs to be
+        %converted into a change in radius. Under both prescribed planform
+        %shapes, the change in radii is uniform across major and minor axes
+        % however, the equations to derive dM 
+        
+        if contains(modelinputs.planshape, 'egg')
+            dM = 2 .* dMarea ./ (pi .* (5 .* Mrmajor_prev + 3 .* Mrminor_prev - sqrt((3 .* Mrmajor_prev + Mrminor_prev).*(Mrmajor_prev + 3 .* Mrminor_prev)))); 
+        elseif contains(modelinputs.planshape, 'circle')
+            dM = sqrt((Ms_prev + dMarea)./pi) - Mrmajor_prev;
+        end
+        
+        
         time.dM(:,cc)  =  dM;
         time.uw(:,cc)  =  uw;
         % time.V(cc)  = Vadd;
@@ -309,11 +336,21 @@ plot(time.t, Qin)
         % Calculate the water volume added to the moulin by calculating the enlargement of the moulin due to turbulent melting
         %Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet);
         %        Vadd_turb = waterVolumeFromTurbulence(Mrminor_prev, Mrmajor_prev, dM, z, wet, dt);
-            time.Vadd_turb(cc) = Vadd_turb;
+        time.Vadd_turb(cc) = Vadd_turb;
         
         
         %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-            [dOC, Vadd_oc ] = openchannel(hw, Qin(cc), Mrminor_prev, Mrmajor_prev, M.xu, dt, Ti, dz, z, wet, include_ice_temperature, fR_oc_variable,  relative_roughness_OC,  fR_oc_fixed);
+            [dOCarea, Vadd_oc ] = openchannel(hw, Qin(cc), Mrminor_prev, Mrmajor_prev, M.xu, dt, Ti, dz, z, wet, include_ice_temperature, fR_oc_variable,  relative_roughness_OC,  fR_oc_fixed, modelinputs.planshape);
+            
+        if contains(modelinputs.planshape, 'egg')
+            dOC = 2 .* dOCarea ./ (pi .* 3.*(Mrmajor_prev + Mrminor_prev) - sqrt((3 .* Mrmajor_prev + Mrminor_prev).*(Mrmajor_prev + 3 .* Mrminor_prev))); 
+        elseif contains(modelinputs.planshape, 'circle')
+            %This applies the melting uniformly around the perimeter...
+            dOC = sqrt((Ms_prev + dOCarea)./pi) - Mrmajor_prev;
+        end
+            
+            
+            
             
             % Scale the open channel displacement down by 1/2 to reflect the
             % displacement at exactly the upstream point:
@@ -354,10 +391,19 @@ plot(time.t, Qin)
         
         %%%%%%%%% dE: Elastic deformation
         % Elastic deformation: This is small, and sensitive to water pressure
-        dE_minor = elastic(Mrminor_prev,stress,C);
-        time.dE_minor(:,cc) = dE_minor;
+
         dE_major = elastic(Mrmajor_prev,stress,C);
         time.dE_major(:,cc) = dE_major;
+       
+        %This if statement is used to eliminate the minor radius when the model us run with a circular crossectional area.
+        if contains(modelinputs.planshape, 'egg')
+            dE_minor = elastic(Mrminor_prev,stress,C);
+                time.dE_minor(:,cc) = dE_minor;
+        elseif contains(modelinputs.planshape, 'circle')
+            dE_minor = dE_major;
+                time.dE_minor(:,cc) = dE_minor;
+        end
+         
         % Elastic deformation changes the volume of the moulin.  We need to 
         % calculate this volume change and send it to subglacialsc:
         Vadd_E = calculate_dQ_deformation(dE_major,dE_minor,M,z,wet);
@@ -385,11 +431,20 @@ plot(time.t, Qin)
         %This if statement allows you to determine if you want potential
         %drop applied on the downstream radius
         if modelinputs.use_pD_downstream
-            M.xu = M.xu - dC_major - dE_major - dM + dG - dOC - 0 * dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
+            M.xu = M.xu - dC_major - dE_major - dM +  dG - dOC - 0 * dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
             % Important Note: the +dG above is correct.
             % The upstream wall moves downstream.
             
-            M.xd = M.xd + dC_minor + dE_minor + dM + dG + 0 * dOC +  dP; % if you dont want any melt from dP, then use 0 * dP
+            
+            %%%need to include choice about circlular perimeter...
+            if contains(modelinputs.planshape, 'egg')
+                M.xd = M.xd + dC_minor + dE_minor + dM + dG + 0 * dOC +  dP; % if you dont want any melt from dP, then use 0 * dP            
+            elseif contains(modelinputs.planshape, 'circle')
+                M.xd = M.xd + dC_minor + dE_minor + dM + dG + dOC +  dP; % if you dont want any melt from dP, then use 0 * dP
+            end
+            
+            
+            
             % The downstream wall also moves downstream
             % at the same rate, dG.
             
@@ -410,15 +465,22 @@ plot(time.t, Qin)
             % Important Note: the +dG above is correct.
             % The upstream wall moves downstream.
             
-            M.xd = M.xd + dC_minor + dE_minor + dM + dG + 0*dOC +  0*dP; % if you dont want any melt from dP, then use 0 * dP
             % The downstream wall also moves downstream
             % at the same rate, dG.
             
+            
+            %%%need to include choice about circlular perimeter...
+            if contains(modelinputs.planshape, 'egg')
+                 M.xd = M.xd + dC_minor + dE_minor + dM + dG + 0*dOC +  0*dP; % if you dont want any melt from dP, then use 0 * dP
+            elseif contains(modelinputs.planshape, 'circle')
+                M.xd = M.xd + dC_minor + dE_minor + dM + dG + dOC +  0*dP; % if you dont want any melt from dP, then use 0 * dP
+            end
+            
             % Shift them both back upstream so that the bed of the upstream wall
             % stays pinned at x = 0:
-            x0 = M.xu(1);
-            M.xu = M.xu - x0;
-            M.xd = M.xd - x0;
+            %x0 = M.xu(1);
+            %M.xu = M.xu - x0;
+            %M.xd = M.xd - x0;
             %
             % Now use the moulin positions to assign the major and minor radii:
             M.r_minor = max(M.r_minor + dC_minor + dE_minor + dM + 0 * dP, Mrmin); %not sure whhat the max does here, but added dP
