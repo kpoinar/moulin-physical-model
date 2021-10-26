@@ -1,7 +1,6 @@
 % Creep closure of a water-filled borehole
 %
 % Based on boreholeclosure/HomeworkProblem_Vostok3G.m
-% which I did in 2013 for crevasse model
 %
 % Borehole 3G at Vostok
 % by Blinov and Dmitriev (1987) and Salamatin et al (1998)

@@ -1,5 +1,4 @@
-function [dOC, Vadd_oc] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, wet, include_ice_temperature,   fR_oc_variable, relative_roughness_OC,  fR_oc_fixed)
-%function [dOC, Vadd_oc, hL, dL, fR, neg2, Rh] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, wet, include_ice_temperature,   fR_oc_variable, relative_roughness_OC,  fR_oc_fixed)
+function [dOC, Vadd_oc, hL, dL, fR, neg2, Rh] = openchannel(hw, Qin, Mr_minor, Mr_major, Mxu, dt, Ti, dz, z, wet, include_ice_temperature,   fR_oc_variable, relative_roughness_OC,  fR_oc_fixed, planshape)
 
 
 % so the hydrualic radius will be calculated as the perimeter of 1/2 an
@@ -62,7 +61,7 @@ dvnL = diff(Mxu);
  dvnL(end) =  dvnL(end-1);
  neg = dvnL;
 
- neg2 = neg;
+
 neg(neg<0) = 0;
 neg(neg>=0)=1;
  
@@ -89,17 +88,24 @@ neg(neg>=0)=1;
 
 %%%%%%%%%%%%% calculate the wetted perimeter, hydraulic diameter, and hydraulic radius 
 
-% % For calculations using a semi-ellipse
-% Mp = ellipseperimeter(Mr_minor, Mr_major);
-% Mp = Mp/2; %to get a semiellipse...
-% area_ell = area_ell/2; %to get a semiellipse...
 
-% For calculations assuming a semicircle
-area_ell = 0.5 .* pi .* Mr_major.^2;
-Mp       = pi .* Mr_major;
+if contains(planshape, 'egg')
+    Mr_mean = (Mr_major + Mr_minor)./2;  %% checking this
+    Mp = pi .* Mr_mean;
+    area_ell = 0.5 .* pi .* Mr_mean .* Mr_mean;
 
-Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
-Rh   = area_ell ./ Mp; % hydraulic radius
+    Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
+    Rh   = area_ell ./ Mp;
+elseif contains(planshape, 'circle')
+    %This applies the melting uniformly around the perimeter...
+    
+    Mp = 2 .* pi .* Mr_major;
+    area_ell = 0.5 .* pi .* Mr_major .* Mr_major;
+
+    Dh   = (4 .* area_ell) ./ Mp; %hydraulic diameter
+    Rh   = area_ell ./ Mp;
+end
+            
 
 %%%%%%%%%%%%% The water temperature is assumed to be zero because it is not,
 % technically, under pressure of the water above it
@@ -134,17 +140,17 @@ Tmw  =  273.15;
 hL = (((Qin./area_ell).^2) .*fR .* dvnL) ./ (2 .* Dh .* C.g);
 %hL = (((9).^2) .*fR .* dL) ./ (2 .* Dh .* C.g);
 %hL = 1;
-%%%%%%%%%%%%% calculate the expected melt 
+%%%%%%%%%%%%% calculate the expected melt  
 if include_ice_temperature
-    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dvnL)) ...
-                ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf));
+    dOC_dt =    (Qin ./ (C.rhoi .* C.Lf + C.rhoi .* C.cw .* (Tmw - Ti))) .* (C.rhow .* C.g .* (hL./dvnL) + C.cw .* C.rhow .* (0./dz) );
+    
 
     %This is modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
     % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
     % include the surrounding ice temperature 
     
 else
-    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dvnL)) ./ (Mp .* C.rhoi .* C.Lf); %#ok<UNRCH>
+    dOC_dt =    (C.rhow .* C.g .* Qin .* (hL./dvnL)) ./ ( C.rhoi .* C.Lf); %#ok<UNRCH>
     % This parameterization is closer to that which is traditionally used
     % to calculate melting within a subglacial channel where the ice and
     % water are at the same temperature
