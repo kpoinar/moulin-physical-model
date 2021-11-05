@@ -91,6 +91,8 @@ The function ColorBrewer.m is missing.  It is available at the [Mathworks File E
 
 # References
 
+Alley, R. B., Dupont, T. K., Parizek, B. R., and Anandakrishnan, S. (2005) Access of surface meltwater to beds of sub-freezing glaciers: preliminary insights, Ann. Glac., 40, 8–14, https://doi.org/10.3189/172756405781813483.
+
 Andrews, Poinar, and Trunz (2020).  Physical controls on moulin geometry and evolution within the Greenland ice sheet.  Soon available on The Cryosphere Discussions.
 
 Covington, M. D., Gulley, J. D., Trunz, C., Mejia, J., & Gadd, W. (2020). Moulin Volumes Regulate Subglacial Water Pressure on the Greenland Ice Sheet. Geophysical Research Letters, 47(20). https://doi.org/10.1029/2020GL088901
