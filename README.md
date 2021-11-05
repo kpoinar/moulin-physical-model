@@ -46,7 +46,13 @@ Water velocity through the moulin (calculated according to mass conservation) an
 
 See openchannel.m
 
-A "waterfall" sort of feature is often observed in water flowing from the ice-sheet surface into the moulin.  This function calculates the wall melt-out that results from this turbulent, open-channel flow.  
+A "waterfall" sort of feature is often observed in water flowing from the ice-sheet surface into the moulin.  This function calculates the wall melt-out that results from this turbulent, open-channel flow. 
+
+### Refreezing
+
+see refreeze_simple.m 
+
+Refreezing occurs in cold ice when water flow is absent or slow enough that the rate of heat conduction into the surrounding ice drops the water temperature to the freezing point.  These conditions occur primarily outside the melt season. When these conditions are met, we apply a radial freezing term, which is parameterized economically, following Alley (2005).
 
 
 ### Evolution of the subglacial channel size and water flux
