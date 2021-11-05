@@ -103,8 +103,20 @@ hL  =  ((uw.^2) .* fR .* dL) ./(2 .* Dh .* C.g);
 if include_ice_temperature
     
     %revised 10/25/2021 LCA 
-    dM_dt =  (Qout ./ (C.rhoi .* C.Lf + C.rhoi .* C.cw .* (Tmw - Ti))) .* (C.rhow .* C.g .* (hL./dL) + C.cw .* C.rhow .* (dTmw./dz) );
+    dM_dt =   (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+              ./ (C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf));   
     
+    % dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+    %           ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)) + 0.1*(Qout ./ ((C.rhoi .* C.Lf) ))* C.cw .* C.rhow .* (0.00096);
+%     
+    %(C.rhow .* C.g .* Qout .* (hL./dL)) ...
+    %          ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
+    
+    
+    %+ C.rhoi .* C.cw .* (Tmw - Ti))) .* (C.rhow .* C.g .* (hL./dL)  + C.cw .* C.rhow .* (0.00096) );
+    
+% % % % % %         dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+% % % % % %                 ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
     
     %(C.rhow .* C.g .* Qout .* (hL./dL)) ...
     %            ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 

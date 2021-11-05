@@ -51,7 +51,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     n         = 3;              % flow law exponent (Glen's Flow Law)
     
     %inital guesses for subglacial model
-    hw(1) = H;                  % moulin water level (m)
+    hw(1) =  H;                  % moulin water level (m)
     S(1)  = R0;%1.5* R0;                 % subglacial channel cross sectional area (m^2)
     chebx     = 0;              % chebx=1 is not working yet
     E         = modelinputs.E; %5;             % enhancement factor for creep
@@ -91,7 +91,10 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         load(modelinputs.Qinfile{1});
         baseflow  =  Q2.(modelinputs.Qin_year{1}).(modelinputs.Qin_baseflow{1});
 
-        Qbase  = 4.* interp1(baseflow(:,1), baseflow(:,2), time.t, 'spline', 'extrap'); 
+    
+        Qbase  = 2.* interp1(baseflow(:,1), baseflow(:,2), time.t, 'spline', 'extrap'); 
+
+        
         Qbase = Qbase';
         time.Qbase = Qbase;
         clear Qbase_subglacial baseflow
@@ -113,7 +116,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         time.Qin = Qin;  %save for future plotting
         clear Q 
         
-        Qbase = time.t .* 0 ; %apply zero baseflow to the subglacial model
+        Qbase = time.t .* 0 + 0; %apply zero baseflow to the subglacial model
         
     end
     
@@ -258,17 +261,25 @@ plot(time.t, Qin)
         %Qin_compensated = Qin(cc)+Qadd;
         Qin_compensated = Qin(cc)+Qadd + Qbase(cc); %including Qbase provides a minimum base flow for the subglacial model without needing to route additional water through the moulin
         time.Qin_compensated(cc) = Qin_compensated;
-        %[hw,S,Qout]   = subglacialsc(Mrminor_prev,z, Qin_subbase(cc),H,L,C,tspan,y0, opt); %consider adding Vadd to the qin values
+        
+        
+        
+        
         [hw,S,Qout, dydt_out]   = subglacialsc(Ms,z,Qin_compensated,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values
-            %the first term in the function had been MrMinor_prev, which
-            %actually is the radius, not the cross-sectional area, LCA
-            %fixed on 6/7/20
+        %[hw,S,Qout, dydt_out]   = subglacialsc_fixedS(Ms,z,Qin_compensated,H,L,C,dt,tspan,y0, opt); %consider adding Vadd to the qin values 
+        
 
             time.S(cc)    = S;
             time.hw(cc)   = hw;
             time.Qout(cc) = Qout ;% - Qbase(cc); %this removes the baseflow from the Qout
             time.dydt_out(cc) = dydt_out;
             time.Qbase(cc) = Qbase(cc); 
+            
+            
+        % develop code to fix the suglacial cross-sectional area LCA
+        % 10/26/21
+         
+        
         
         %%%%%%%%%%%
         % which nodes are underwater or at the water line (wet) versus above the water line?
@@ -312,6 +323,10 @@ plot(time.t, Qin)
         
         %%%%%%%%% dM: Turbulent melting
         % Turbulent melting:
+        %tmp = find(wet,1,'last')
+        
+        
+        
         [dMarea, uw, Vadd_turb] = turbulence(Qout, Ms, Mp, Dh, Rh, M.xd, dt, Ti, dz, z, wet, include_ice_temperature, fR_wet_variable, relative_roughness_wet,   fR_wet_fixed);
         
         %dM is the change in cross-sectional area. Now it needs to be
@@ -320,7 +335,9 @@ plot(time.t, Qin)
         % however, the equations to derive dM 
         
         if contains(modelinputs.planshape, 'egg')
-            dM = 2 .* dMarea ./ (pi .* (5 .* Mrmajor_prev + 3 .* Mrminor_prev - sqrt((3 .* Mrmajor_prev + Mrminor_prev).*(Mrmajor_prev + 3 .* Mrminor_prev)))); 
+%            dM = 2 .* dMarea ./ (pi .* (5 .* Mrmajor_prev + 3 .* Mrminor_prev - sqrt((3 .* Mrmajor_prev + Mrminor_prev).*(Mrmajor_prev + 3 .* Mrminor_prev)))); 
+            dM = 2 .* dMarea ./ (pi .* (5 .* Mrminor_prev + 3 .* Mrmajor_prev - sqrt((3 .* Mrminor_prev + Mrmajor_prev).*(Mrminor_prev + 3 .* Mrmajor_prev)))); 
+
         elseif contains(modelinputs.planshape, 'circle')
             dM = sqrt((Ms_prev + dMarea)./pi) - Mrmajor_prev;
         end
@@ -340,13 +357,15 @@ plot(time.t, Qin)
         
         
         %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
-            [dOCarea, Vadd_oc ] = openchannel(hw, Qin(cc), Mrminor_prev, Mrmajor_prev, M.xu, dt, Ti, dz, z, wet, include_ice_temperature, fR_oc_variable,  relative_roughness_OC,  fR_oc_fixed, modelinputs.planshape);
+            [dOC, Vadd_oc ] = openchannel(hw, Qin(cc), Mrminor_prev, Mrmajor_prev, M.xu, dt, Ti, dz, z, wet, include_ice_temperature, fR_oc_variable,  relative_roughness_OC,  fR_oc_fixed);
             
         if contains(modelinputs.planshape, 'egg')
-            dOC = 2 .* dOCarea ./ (pi .* 3.*(Mrmajor_prev + Mrminor_prev) - sqrt((3 .* Mrmajor_prev + Mrminor_prev).*(Mrmajor_prev + 3 .* Mrminor_prev))); 
+            time.dOC(:,cc)  =  dOC;
+            time.Vadd_oc(cc)    =  Vadd_oc;
         elseif contains(modelinputs.planshape, 'circle')
             %This applies the melting uniformly around the perimeter...
-            dOC = sqrt((Ms_prev + dOCarea)./pi) - Mrmajor_prev;
+            time.dOC(:,cc)  =  dOC;
+            time.Vadd_oc(cc)    =  Vadd_oc;
         end
             
             
@@ -461,19 +480,29 @@ plot(time.t, Qin)
             
         else
             
-            M.xu = M.xu - dC_major - dE_major - dM + dG - dOC - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
+
+            
+            
+            %%%need to include choice about circlular perimeter...
+            if contains(modelinputs.planshape, 'egg')
+                M.xu = M.xu - dC_major - dE_major - dM + dG - dOC - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
             % Important Note: the +dG above is correct.
             % The upstream wall moves downstream.
             
             % The downstream wall also moves downstream
             % at the same rate, dG.
-            
-            
-            %%%need to include choice about circlular perimeter...
-            if contains(modelinputs.planshape, 'egg')
+                
                  M.xd = M.xd + dC_minor + dE_minor + dM + dG + 0*dOC +  0*dP; % if you dont want any melt from dP, then use 0 * dP
+           
+            
             elseif contains(modelinputs.planshape, 'circle')
-                M.xd = M.xd + dC_minor + dE_minor + dM + dG + dOC +  0*dP; % if you dont want any melt from dP, then use 0 * dP
+               M.xu = M.xu - dC_major - dE_major - dM + dG - 0.5*dOC - 0*dP; %melt rate at the apex of the ellipse is 1/2 the total meltrate, which will be nonuniformly distributed along the new perimeter
+            % Important Note: the +dG above is correct.
+            % The upstream wall moves downstream.
+            
+            % The downstream wall also moves downstream
+            % at the same rate, dG.
+                M.xd = M.xd + dC_minor + dE_minor + dM + dG + 0.5*dOC +  0*dP; % if you dont want any melt from dP, then use 0 * dP
             end
             
             % Shift them both back upstream so that the bed of the upstream wall
