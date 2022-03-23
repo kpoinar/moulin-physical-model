@@ -14,13 +14,13 @@ seriesname          = 'Qinsens_r0';     % a descritive name of the entire runser
 savefile            = datestr(now, 'mm-dd-yyyy');   % the base name of the files to be saved.
 
 workingdirectory    = pwd;              %yeah, I know this is a pain, but it makes things work more easily
-savelocation        = ['/Users/lcandre2/Documents/Repositories/MouSh-beta-revisions/moulin-physical-model/', savefile]; % where do you want to save the outputs?
+savelocation        = ['/Users/lcandre2/Documents/Repositories/MouSh_rev2/moulin-physical-model/', savefile]; % where do you want to save the outputs?
 %savelocation        =['./modeloutputs/' ,seriesname, savefile];
 
 clearpreviousfiles  = false;             % This clears the files previously saved on this day for this script, use with caution
 makeplots_tf        = true;              % do you want to make the plots for each?
 showfigures_tf      = true;              %show the figures
-savefigures_tf      = true;              % do you want to save plots for each?
+savefigures_tf      = false;              % do you want to save plots for each?
 
 
 
@@ -39,10 +39,10 @@ warning('off')
 %%% NOTE: variables either need to be 1 or the full number of the runs
 
 % General characteristics
-parameters.planshape                       = {'circle'};           % Plan view shape of the moulin. Options include 'egg' and 'circle'
+parameters.planshape                       = {'egg'};           % Plan view shape of the moulin. Options include 'egg' and 'circle'
 parameters.Tdatatype                        = {'Ryser_foxx'};    % Choose the ice temperature to use for the model                                                
                                                                 % {'IkenB','Ryser_gull','Ryser_foxx','Cold','Temperate'};
-parameters.numofdays                       =  100;               % for how many days do you want to run the model?
+parameters.numofdays                       =  10;               % for how many days do you want to run the model?
 parameters.H                               = 741;               % H Ice thickness.  = 820 is our standard moulin, 30 km from the margin.
 parameters.R0                              = 3;               % initial moulin radius @ bed
 parameters.Rtop                            = 3;             % initial moulin radius @ surface (should be less than R0)
@@ -118,24 +118,34 @@ parameters.fR_fixed_oc                 = 0.8; %logspace(-2,0,5); %1;  % base val
 
 %% Qin information
 
-parameters.Qinreal             = true;
+parameters.Qinreal             = false;
 % if Qin is from realistic data i.e. Qinreal = true
 if parameters.Qinreal
     parameters.Qinfile             = {'Qin_real_2019.mat'}; %{'Qincosines_peak7pm.mat'}; '/
-    
+   
     parameters.Qin_smoothval       = 12; % for the smooth function assuming 1 hour data. This dampens diurnal varibility
     parameters.Qin_year            = {'y2019'};
     parameters.Qin_basin           = {'b352'}; %'b749' %b727
     parameters.Qin_baseflow        = {'b044_baseflow'};  %basename_baseflow, column 1 time, column2 baseflow estimate - This is only added to the subglacial calculation 
     parameters.Qin_dampen          = 0.5; %this dampens the diurnal varibility
+    parameters. Qintype            = NaN;
+    parameters.Qinrange            = NaN;
+    parameters. Qinbase            = NaN;
     %%%%%%%%%%
 else
     
 % if Qin is idealized i.e. Qinreal = false
     parameters.Qinfile             = {'Q_cosine_elevation_bands.mat'}; %{'Qincosines_peak7pm.mat'}; '/
+    
     parameters.Qintype             = 2;    % 2 is cosinusoid, 3 is two superimposed cosinusoids, 4 has more variability, 5 has most variability
     parameters.Qinrange            = 1;     % of the form:  Qin     = Qin*Qinrange + Qinbase;
     parameters.Qinbase             = 5;      % of the form:  Qin     = Qin*Qinrange + Qinbase;
+    
+    parameters.Qin_smoothval       = NaN; % for the smooth function assuming 1 hour data. This dampens diurnal varibility
+    parameters.Qin_year            = NaN;
+    parameters.Qin_basin           = NaN; %'b749' %b727
+    parameters.Qin_baseflow        = NaN;  %basename_baseflow, column 1 time, column2 baseflow estimate - This is only added to the subglacial calculation 
+    parameters.Qin_dampen          = NaN; %this dampens the diurnal varibility
 end
 %%%%%%%%%%
 
@@ -197,6 +207,6 @@ end
    cd(workingdirectory)
    
    %copy script with new name and tar entire package
-   copyfile([workingdirectory, '/call_moulingeom_series_H.m'], [savelocation, '/', savefile, '_call_moulingeom_series_used.m']);
+   copyfile([workingdirectory, '/call_moulingeom_series.m'], [savelocation, '/', savefile, '_call_moulingeom_series_used.m']);
    
    disp('Done!')
