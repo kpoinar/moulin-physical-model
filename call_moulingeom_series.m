@@ -50,7 +50,7 @@ parameters.Rtop                            = 3;             % initial moulin rad
 % Set ice geometry. If not using the function below, these must be set
 % individually
 % L = distance from terminus, alpha is the surface slope, Q values are the
-% range and base flow for a sinusoidal forcing.
+% range and base flow for a sinusoidal forcing. 
 [parameters.L,parameters.alpha, ~, ~ ]  = makeicesheetgeom(parameters.H);% this function provides a consistent distance from terminus and local slope for
                                                                 % for a given ice thickness based on an idealized ice sheet profile.
 %parameters.alpha               = [alpha];        %regional slope
@@ -184,7 +184,7 @@ for ii = 1:maxlengthofseries
     for jj = 1:length(lengthofseries)
         modelinputs.(names{jj}) = parameters.(names{jj})(ii);
     end
-    time   =  moulingeom_fcn(workingdirectory, savelocation,  makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savetime);
+    [time, elasticcomp]   =  moulingeom_fcn(workingdirectory, savelocation,  makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savetime);
    
     % DO STATIC CYLINDER MOULIN
     %time   =  moulinCYLINDER_fcn(workingdirectory, savelocation,  makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savetime);
@@ -193,6 +193,7 @@ for ii = 1:maxlengthofseries
     res{ii,1} = ['run_', num2str(ii)];
     res{ii,2} = time;
     res{ii,3} = modelinputs;
+    res{ii,4} = elasticcomp;
     
 end
 

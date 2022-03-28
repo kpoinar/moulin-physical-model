@@ -1,5 +1,5 @@
 % Solve for moulin geometry, considering
-function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savefile) 
+function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savefile) 
 
 % 1. elastic deformation (opening / closure)
 % 2. creep deformation (opening / closure)
@@ -184,6 +184,11 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
     end
     
     
+    %% initialize variable for elastic2 
+        dR_major_total = zeros(length(M.r_major), 1);
+        dR_minor_total = zeros(length(M.r_major), 1);
+    
+    
     %% Step through time
     cc = 0;
     nt = length(time.t);
@@ -197,7 +202,8 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         Mrminor_prev  = M.r_minor;
         Mrmajor_prev  = M.r_major;
         Mxuprev       = M.xu;
-
+        hw_prev       = hw;
+        
         
         %%%%%%%%%%
         %calculate moulin hydraulic parameters based on the chosen moulin
@@ -236,6 +242,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         opt                      = odeset('RelTol', 10.0^(-3), 'AbsTol' , 10.0^(-3)); %first guesses for the ode solvers
         
         % ODE to solve subglacial model
+        hw_init = hw;
         [hw,S,Qout, dydt_out]    = subglacialsc(Ms,z,Qin_subtotal,H,L,C,dt,tspan,y0, opt); 
         %[hw,S,Qout, dydt_out]   = subglacialsc_fixedS(Ms,z,Qin_subtotal,H,L,C,dt,tspan,y0, opt); 
         
@@ -246,7 +253,7 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         time.dydt_out(cc)        = dydt_out;
         time.Qbase(cc)           = Qbase(cc); 
         
-        
+      
         
 %%%%%Node pressures%%%%%%%%%%%%%
 % Submerged nodes and cryostatic and hydrostatic stresses        
@@ -390,26 +397,33 @@ function time = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, sa
         % Elastic deformation: This is small, and sensitive to water pressure
          
   %%%%%%%%%Implement the new elastic scheme elastic2
-         if cc <= 2 
-         hw_einit = time.hw(cc);
-         Mrmajor_einit = M.r_major;
-         Mrminor_einit = M.r_minor;
-         else
-         hw_einit = time.hw(cc-1);
-         Mrmajor_einit = time.M.r_major(:,cc-2);
-         Mrminor_einit = time.M.r_minor(:,cc-2);
-         end
+
         
-         dE_major = elastic2(Mrmajor_prev, stress, hw_einit, Mrmajor_einit, dt, C,z,wet); 
+         [dE_major, majordMr_dt, majordP_dt, majorMr, majorP1] = elastic2(Mrmajor_prev, stress, hw_prev, dR_major_total, dt, C,z,wet); 
          time.dE_major(:,cc) = dE_major;
         if contains(modelinputs.planshape, 'egg')
-            dE_minor = elastic2(Mrminor_prev, stress, hw_einit, Mrminor_einit, dt, C,z, wet); 
+            [dE_minor, minordMr_dt, minordP_dt, minorMr, minorP1] = ...
+                        elastic2(Mrminor_prev, stress, hw_prev, dR_minor_total, dt, C,z, wet); 
                 time.dE_minor(:,cc) = dE_minor;
         elseif contains(modelinputs.planshape, 'circle')
                 dE_minor = dE_major;
                 time.dE_minor(:,cc) = dE_minor;
         end         
          
+        dR_major_total = dE_major - dOC + dC_major - dM +dP;
+        dR_minor_total = dE_minor - 0*dOC + dC_major - dM + dP;
+        
+        
+        elasticcomp.dE_major(:,cc)     = dE_major;
+        elasticcomp.dE_minor(:,cc)     = dE_minor;
+        elasticcomp.majordMr_dt(:,cc)  = majordMr_dt;
+        elasticcomp.majordP_dt(:,cc)   = majordP_dt;
+        elasticcomp.majorMr(:,cc)      = majorMr;
+        elasticcomp.majorP1(:,cc)      = majorP1;
+        elasticcomp.minordMr_dt(:,cc)  = minordMr_dt;
+        elasticcomp.minordP_dt(:,cc)   = minordP_dt;
+        elasticcomp.minorMr(:,cc)      = minorMr;
+        elasticcomp.minorP1(:,cc)      = minorP1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
 %3/22/22 commented by LCA to test elastic2        
 %         dE_major = elastic(Mrmajor_prev,stress,C);
