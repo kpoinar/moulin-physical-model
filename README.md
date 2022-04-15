@@ -46,7 +46,13 @@ Water velocity through the moulin (calculated according to mass conservation) an
 
 See openchannel.m
 
-A "waterfall" sort of feature is often observed in water flowing from the ice-sheet surface into the moulin.  This function calculates the wall melt-out that results from this turbulent, open-channel flow.  
+A "waterfall" sort of feature is often observed in water flowing from the ice-sheet surface into the moulin.  This function calculates the wall melt-out that results from this turbulent, open-channel flow. 
+
+### Refreezing
+
+see refreeze_simple.m 
+
+Refreezing occurs in cold ice when water flow is absent or slow enough that the rate of heat conduction into the surrounding ice drops the water temperature to the freezing point.  These conditions occur primarily outside the melt season. When these conditions are met, we apply a radial freezing term, which is parameterized economically, following Alley (2005).
 
 
 ### Evolution of the subglacial channel size and water flux
@@ -84,6 +90,8 @@ The function ColorBrewer.m is missing.  It is available at the [Mathworks File E
 
 
 # References
+
+Alley, R. B., Dupont, T. K., Parizek, B. R., and Anandakrishnan, S. (2005) Access of surface meltwater to beds of sub-freezing glaciers: preliminary insights, Ann. Glac., 40, 8–14, https://doi.org/10.3189/172756405781813483.
 
 Andrews, Poinar, and Trunz (2020).  Physical controls on moulin geometry and evolution within the Greenland ice sheet.  Soon available on The Cryosphere Discussions.
 

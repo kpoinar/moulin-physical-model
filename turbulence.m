@@ -65,7 +65,11 @@ uw = min(uw,9.3);
 % ------------------------------    
 % calculate the pressure melting temperature of ice/water %https://glaciers.gi.alaska.edu/sites/default/files/mccarthy/Notes_thermodyn_Aschwanden.pdf
 Pw   = C.rhow .* C.g .* (z(find(wet,1,'last'))-z) .* wet;
-Tmw  = C.T0 - 9.8e-8.*(Pw - 611.73).* wet;  
+Tmw  = C.T0 - 9.8e-8.*(Pw - 611.73).* wet; 
+
+%find the temperature change for 
+dTmw = diff(Tmw);
+dTmw = [dTmw(1); dTmw];
 
 
 % select the appropriate parameterization of DW friction factor
@@ -97,14 +101,36 @@ hL  =  ((uw.^2) .* fR .* dL) ./(2 .* Dh .* C.g);
 
 
 if include_ice_temperature
-    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
-                ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
+    
+    %revised 10/25/2021 LCA 
+    dM_dt =   (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+              ./ (C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf));   
+    
+    % dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+    %           ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)) + 0.1*(Qout ./ ((C.rhoi .* C.Lf) ))* C.cw .* C.rhow .* (0.00096);
+%     
+    %(C.rhow .* C.g .* Qout .* (hL./dL)) ...
+    %          ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
+    
+    
+    %+ C.rhoi .* C.cw .* (Tmw - Ti))) .* (C.rhow .* C.g .* (hL./dL)  + C.cw .* C.rhow .* (0.00096) );
+    
+% % % % % %         dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+% % % % % %                 ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
+    
+    %(C.rhow .* C.g .* Qout .* (hL./dL)) ...
+    %            ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
+    
+    
+    
+    %dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ...
+    %            ./ (Mp .* C.rhoi .* (C.cw .* (Tmw - Ti) + C.Lf)); 
     %This tis modified from Jarosch & Gundmundsson (2012); Nossokoff (2013)
     % Gulley et al. (2014), Nye (1976) & Fountain & Walder (1998) to
     % include the surrounding ice temperature 
     
 else
-    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ./ (Mp.* C.rhoi .* C.Lf); %#ok<UNRCH>
+    dM_dt =    (C.rhow .* C.g .* Qout .* (hL./dL)) ./ ( C.rhoi .* C.Lf); %#ok<UNRCH>
     % This parameterization is closer to that which is traditionally used
     % to calculate melting within a subglacial channel where the ice and
     % water are at the same temperature

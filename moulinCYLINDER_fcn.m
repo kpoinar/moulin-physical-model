@@ -17,7 +17,7 @@ function time = moulinCYLINDER_fcn( workingdirectory, savelocation, makeplots_tf
     C         = makeConstants;  %constants used for parameterizations  %if there is a particular value we want to change gradually, 
     if isfield(modelinputs,'A_value')%, 'var')
         C.A = modelinputs.A_value; 
-        C.c2 = 1*C.A*C.n^(-C.n); % Need to recalculate the closure parameter (Schoof 2010) with the new A
+        C.c2 = 2*C.A*C.n^(-C.n); % Need to recalculate the closure parameter (Schoof 2010) with the new A
     end
     
     
@@ -72,7 +72,7 @@ function time = moulinCYLINDER_fcn( workingdirectory, savelocation, makeplots_tf
         load(modelinputs.Qinfile{1});
         baseflow  =  Q2.(modelinputs.Qin_year{1}).(modelinputs.Qin_baseflow{1});
 
-        Qbase  = 3.* interp1(baseflow(:,1), baseflow(:,2), time.t, 'spline', 'extrap'); 
+        Qbase  = 5.* interp1(baseflow(:,1), baseflow(:,2), time.t, 'spline', 'extrap'); 
         Qbase = Qbase';
         time.Qbase = Qbase;
         clear Qbase_subglacial baseflow

@@ -196,7 +196,7 @@ else
     figure('visible', 'off');
 end
 
- set(gcf,'position',[377    84   397   721])
+ set(gcf,'position',[436         360        1191         977])
 hold on
 
     ii=length(time.t);
@@ -217,7 +217,7 @@ hold on
     plot(Moff+[leftlim time.M.xu(1,ii) NaN time.M.xd(1,ii) rightlim-Moff],[0 0 0 0 0],'-k')
     %
     set(gca,'xlim',[leftlim rightlim],'ylim',[-50 H+50]);
-    xlabel('Moulin size (m)')
+    xlabel('Moulin size (m)', 'fontweight', 'bold')
     ylabel('meters above bed')
     set(gca,'yaxislocation','right')
     set(gca,'xaxislocation','top')
