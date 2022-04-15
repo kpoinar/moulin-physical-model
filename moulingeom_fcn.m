@@ -1,5 +1,5 @@
 % Solve for moulin geometry, considering
-function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savefile) 
+function [time] = moulingeom_fcn( workingdirectory, savelocation, makeplots_tf, savefigures_tf, showfigures_tf, modelinputs, savefile) 
 
 % 1. elastic deformation (opening / closure)
 % 2. creep deformation (opening / closure)
@@ -56,7 +56,7 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
     
     %inital guesses for subglacial model
     hw(1) =  H;                              % moulin water level (m)
-    S(1)  = R0;                              % subglacial channel cross sectional area (m^2)
+    S(1)  = 1.945;                              % subglacial channel cross sectional area (m^2)
     chebx     = 0;                           % chebx=0 is the only option (0,1) that has been throughly tested
     E         = modelinputs.E;               % enhancement factor for creep
     
@@ -78,7 +78,7 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
            %only applied during the realistic scenarios and is calculated
            %as:         Qbase  = baseflowmultiplier.* interp1(baseflow(:,1), baseflow(:,2), timet, 'spline', 'extrap'); 
     
-    baseflowmultiplier = 2; 
+    baseflowmultiplier = 5; 
    
     [Qin, Qbase ] = Qincalc(modelinputs.Qinreal, modelinputs.Qinfile,...
                     modelinputs.Qin_smoothval, modelinputs.Qin_year, modelinputs.Qin_basin, modelinputs.Qin_baseflow,...
@@ -184,10 +184,18 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
     end
     
     
-    %% initialize variable for elastic2 
-        dR_major_total = zeros(length(M.r_major), 1);
-        dR_minor_total = zeros(length(M.r_major), 1);
-    
+    %% initialize stress variables
+
+        wet               = locatewater(hw,z);
+                
+        % Calculate hydrostatic pressures everywhere
+        % Ice hydrostatic stress (INWARD: Negative)
+        stress.cryo        = -C.rhoi * C.g * (H - z);
+        
+        % Water hydrostatic stress (OUTWARD: Positive)
+        stress.hydro       = C.rhow * C.g * (hw - z);
+        stress.hydro(~wet) = 0;
+        
     
     %% Step through time
     cc = 0;
@@ -201,9 +209,10 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
         % of creep, refreeze, turbulent melt, elastic, etc. calculations
         Mrminor_prev  = M.r_minor;
         Mrmajor_prev  = M.r_major;
-        Mxuprev       = M.xu;
-        hw_prev       = hw;
-        
+        %Mxuprev       = M.xu;
+        %hw_prev       = hw;
+        stress_prev.hydro = stress.hydro;
+        stress_prev.cryo  = stress.cryo;
         
         %%%%%%%%%%
         %calculate moulin hydraulic parameters based on the chosen moulin
@@ -273,7 +282,7 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
         
         
 %%%%%dC: Creep deformation%%%%%%%%%%%%%
-        %Creep deformation: do this first because it is a larger term
+%Creep deformation: do this first because it is a larger term
 
         dC_major                    = creep(Mrmajor_prev,z,H,stress,T,dt,E,C);
         time.dC_major(:,cc)         = dC_major;
@@ -306,8 +315,8 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
         
         
         
-        %%%%%%%%% dM: Turbulent melting
-        % Turbulent melting:
+%%%%%%%%% dM: Turbulent melting
+% Turbulent melting opens the moulin
         
         
         
@@ -341,7 +350,8 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
         time.Vadd_turb(cc) = Vadd_turb;
         
         
-        %%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
+%%%%%%%%% dOC: Melting due to open channel flow above the moulin water line
+% Open channel melting: occurs above the water line
             [dOC, Vadd_oc ] = openchannel(hw, Qin(cc), Mrminor_prev, Mrmajor_prev, M.xu, dt, Ti, dz, z, wet, include_ice_temperature, fR_oc_variable,  relative_roughness_OC,  fR_oc_fixed);
             
         if contains(modelinputs.planshape, 'egg')
@@ -370,8 +380,10 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
 %             time.oc_rh(:,cc) = rh;
 %             time.oc_cres_area(:,cc) = cres_area;
 %             time.oc_Mp(:,cc) = Mp;
-        %%%%%%%%% dP: Expansion from gravitational potential energy above the water
-            %%%%%%%%% line
+
+
+%%%%%%%%% dP: Expansion from gravitational potential energy above the water
+%%%%%%%%% line
             dP = potentialdrop(Qin(cc),wet,Mp,dt,C,f);
             % The reason for calculating the above is to offset the elastic closure
             % at the top of the moulin.  On its own, the moulin will close
@@ -399,49 +411,49 @@ function [time, elasticcomp] = moulingeom_fcn( workingdirectory, savelocation, m
   %%%%%%%%%Implement the new elastic scheme elastic2
 
         
-         [dE_major, majordMr_dt, majordP_dt, majorMr, majorP1] = elastic2(Mrmajor_prev, stress, hw_prev, dR_major_total, dt, C,z,wet); 
-         time.dE_major(:,cc) = dE_major;
-        if contains(modelinputs.planshape, 'egg')
-            [dE_minor, minordMr_dt, minordP_dt, minorMr, minorP1] = ...
-                        elastic2(Mrminor_prev, stress, hw_prev, dR_minor_total, dt, C,z, wet); 
-                time.dE_minor(:,cc) = dE_minor;
-        elseif contains(modelinputs.planshape, 'circle')
-                dE_minor = dE_major;
-                time.dE_minor(:,cc) = dE_minor;
-        end         
-         
-        dR_major_total = dE_major - dOC + dC_major - dM +dP;
-        dR_minor_total = dE_minor - 0*dOC + dC_major - dM + dP;
-        
-        
-        elasticcomp.dE_major(:,cc)     = dE_major;
-        elasticcomp.dE_minor(:,cc)     = dE_minor;
-        elasticcomp.majordMr_dt(:,cc)  = majordMr_dt;
-        elasticcomp.majordP_dt(:,cc)   = majordP_dt;
-        elasticcomp.majorMr(:,cc)      = majorMr;
-        elasticcomp.majorP1(:,cc)      = majorP1;
-        elasticcomp.minordMr_dt(:,cc)  = minordMr_dt;
-        elasticcomp.minordP_dt(:,cc)   = minordP_dt;
-        elasticcomp.minorMr(:,cc)      = minorMr;
-        elasticcomp.minorP1(:,cc)      = minorP1;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
-%3/22/22 commented by LCA to test elastic2        
-%         dE_major = elastic(Mrmajor_prev,stress,C);
-%         time.dE_major(:,cc) = dE_major;
-%        
-%         %This if statement is used to eliminate the minor radius when the model us run with a circular crossectional area.
+%          [dE_major, majordMr_dt, majordP_dt, majorMr, majorP1] = elastic2(Mrmajor_prev, stress, hw_prev, dR_major_total, dt, C,z,wet); 
+%          time.dE_major(:,cc) = dE_major;
 %         if contains(modelinputs.planshape, 'egg')
-%             dE_minor = elastic(Mrminor_prev,stress,C);
+%             [dE_minor, minordMr_dt, minordP_dt, minorMr, minorP1] = ...
+%                         elastic2(Mrminor_prev, stress, hw_prev, dR_minor_total, dt, C,z, wet); 
 %                 time.dE_minor(:,cc) = dE_minor;
 %         elseif contains(modelinputs.planshape, 'circle')
-%             dE_minor = dE_major;
+%                 dE_minor = dE_major;
 %                 time.dE_minor(:,cc) = dE_minor;
-%         end
+%         end         
+%          
+%         dR_major_total = dE_major - dOC + dC_major - dM +dP;
+%         dR_minor_total = dE_minor - 0*dOC + dC_major - dM + dP;
+%         
+%         
+%         elasticcomp.dE_major(:,cc)     = dE_major;
+%         elasticcomp.dE_minor(:,cc)     = dE_minor;
+%         elasticcomp.majordMr_dt(:,cc)  = majordMr_dt;
+%         elasticcomp.majordP_dt(:,cc)   = majordP_dt;
+%         elasticcomp.majorMr(:,cc)      = majorMr;
+%         elasticcomp.majorP1(:,cc)      = majorP1;
+%         elasticcomp.minordMr_dt(:,cc)  = minordMr_dt;
+%         elasticcomp.minordP_dt(:,cc)   = minordP_dt;
+%         elasticcomp.minorMr(:,cc)      = minorMr;
+%         elasticcomp.minorP1(:,cc)      = minorP1;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
+%3/22/22 commented by LCA to test elastic2        
+        dE_major = elastic(Mrmajor_prev,stress,stress_prev, C);
+        time.dE_major(:,cc) = dE_major;
+       
+        %This if statement is used to eliminate the minor radius when the model us run with a circular crossectional area.
+        if contains(modelinputs.planshape, 'egg')
+            dE_minor = elastic(Mrminor_prev,stress, stress_prev, C);
+                time.dE_minor(:,cc) = dE_minor;
+        elseif contains(modelinputs.planshape, 'circle')
+            dE_minor = dE_major;
+                time.dE_minor(:,cc) = dE_minor;
+        end
          
         % Elastic deformation changes the volume of the moulin.  We need to 
         % calculate this volume change and send it to subglacialsc:
         Vadd_E = calculate_dQ_deformation(dE_major,dE_minor,M,z,wet);
-        %time.Vadd_E(cc) = Vadd_E;
+        time.Vadd_E(cc) = Vadd_E;
         
         %%%%%%%%% dG: Asymmetric deformation due to Glen's Flow Law
         dG = deformGlen(H, T, alpha, z, n, dt, C);

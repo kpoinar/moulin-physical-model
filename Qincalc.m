@@ -54,6 +54,6 @@ function [Qin, Qbase] = Qincalc(Qinreal, Qinfile, Qin_smoothval, Qin_year, Qin_b
     
 figure
 hold on 
-
+tt = mean(Qin)
 plot(timet, Qin)
 %yyaxis right 
