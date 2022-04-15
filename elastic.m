@@ -32,6 +32,8 @@ function dr = elastic(Mr,stress,stress_prev,C)
     %Pi = C.rhoi * C.g * (H-z);  % Pa
     % Total pressure (inward, unless water level is above flotation)
     %P = Pw - Pi;  % Pa
+    
+    
     dP = stress.hydro + stress.cryo - (stress_prev.hydro + stress_prev.cryo);
     %
     % Radial deformation (relax to equilibrium)
