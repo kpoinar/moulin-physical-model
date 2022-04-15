@@ -18,13 +18,13 @@ switch Tdatatype
         %
     case 'Temperate'
         % Temperate ice (no refreezing)
-        Tz = C.T0*ones(size(z));
+        Tz = 273.15*ones(size(z));
     case 'Cool'
         Tmin = -5;
-        Tz = linspace(0,Tmin,numel(z))' + C.T0;
+        Tz = linspace(0,Tmin,numel(z))' + 273.15;
     case 'Cold'
         Tmin = -3;
-        Tz = fastsmooth([linspace(0,Tmin,numel(z)/2) linspace(Tmin,Tmin/2,numel(z)/2+1)]',40,3,1) + C.T0;
+        Tz = fastsmooth([linspace(0,Tmin,numel(z)/2) linspace(Tmin,Tmin/2,numel(z)/2+1)]',40,3,1) + 273.15;
     case 'HarrS2A'
         load fielddata/Harrington_temps_2015.mat
         harr15.S2_A_zeta = (harr15.S2_A_depth_m - min(harr15.S2_A_depth_m)) / (-min(harr15.S2_A_depth_m));
@@ -47,6 +47,7 @@ switch Tdatatype
         load fielddata/Luthi_temps_2015.mat
         luthi15.GULL_C_zeta = (luthi15.GULL_depth_m - min(luthi15.GULL_depth_m)) / (-min(luthi15.GULL_depth_m));
         luthi15.GULL_C_zeta(1) = 1;
+        luthi15.GULL_C_zeta(11) = 0.5656;
         luthi15.Tsmooth = fastsmooth(interp1(luthi15.GULL_C_zeta,luthi15.GULL_temp_C+273.15,linspace(0,1,100)),10,3,1);
         Tz = interp1(linspace(0,1,100),luthi15.Tsmooth,z/H);    
 end
